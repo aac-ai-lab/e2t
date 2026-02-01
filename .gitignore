@@ -1,7 +1,8 @@
 /target
 Cargo.lock
 *.csv
-!data/emoji_token_dataset_sample.csv
+!data/emoji_dictionary_sample.csv
+!data/emoji_words.csv
 .env
 *.pyc
 __pycache__

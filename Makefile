@@ -6,11 +6,11 @@ EMOJI_DATA  ?= data/emoji-data.txt
 EMOJI_LIST  ?= data/emoji_list.txt
 TOKENIZER   ?=
 TOKENIZER_ID ?= gpt2
-CSV_OUT     ?= data/emoji_token_dataset.csv
-CSV_VALID   ?= data/emoji_token_dataset.csv
+CSV_OUT     ?= data/emoji_dictionary.csv
+CSV_VALID   ?= data/emoji_dictionary.csv
 
 .PHONY: help build release test fmt fmt-check clippy check clean
-.PHONY: fetch-emoji-list build-dataset validate reproduce install
+.PHONY: fetch-emoji-list build-dictionary validate reproduce install
 
 help:
 	@echo "E2T Emoji para Token/Word — alvos disponíveis:"
@@ -25,14 +25,14 @@ help:
 	@echo "  make clean          Remove target/"
 	@echo ""
 	@echo "  make fetch-emoji-list [EMOJI_DATA=data/emoji-data.txt] [EMOJI_LIST=data/emoji_list.txt]"
-	@echo "  make build-dataset   Requer TOKENIZER=/path/to/tokenizer.json [EMOJI_LIST=...] [CSV_OUT=...]"
+	@echo "  make build-dictionary   Requer TOKENIZER=/path/to/tokenizer.json [EMOJI_LIST=...] [CSV_OUT=...]"
 	@echo "  make validate [CSV_VALID=...]"
 	@echo "  make reproduce       Requer EMOJI_DATA; opcional TOKENIZER para build completo"
 	@echo ""
 	@echo "Exemplo:"
 	@echo "  make release && make fetch-emoji-list"
-	@echo "  make build-dataset TOKENIZER=data/gpt2-tokenizer.json CSV_OUT=data/emoji_token_dataset.csv"
-	@echo "  make validate CSV_VALID=data/emoji_token_dataset.csv"
+	@echo "  make build-dictionary TOKENIZER=data/gpt2-tokenizer.json CSV_OUT=data/emoji_dictionary.csv"
+	@echo "  make validate CSV_VALID=data/emoji_dictionary.csv"
 
 build:
 	cargo build
@@ -61,7 +61,7 @@ clean:
 fetch-emoji-list: release
 	$(BIN) fetch-emoji-list $(EMOJI_DATA) --output $(EMOJI_LIST)
 
-build-dataset: release
+build-dictionary: release
 	@if [ -z "$(TOKENIZER)" ]; then echo "Erro: defina TOKENIZER=/path/to/tokenizer.json"; exit 1; fi
 	$(BIN) build $(EMOJI_LIST) --tokenizer $(TOKENIZER) --tokenizer-id $(TOKENIZER_ID) --output $(CSV_OUT)
 
@@ -69,7 +69,7 @@ validate: release
 	$(BIN) validate $(CSV_VALID)
 
 reproduce:
-	./scripts/reproduce.sh $(EMOJI_DATA) $(TOKENIZER) $(CSV_OUT)
+	./scripts/reproduce.sh $(EMOJI_DATA) '$(TOKENIZER)' $(CSV_OUT)
 
 install:
 	cargo install --path .

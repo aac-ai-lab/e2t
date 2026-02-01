@@ -3,13 +3,13 @@
 # Uso: ./scripts/reproduce.sh [emoji_data_path] [tokenizer_path] [csv_out]
 #   emoji_data_path: emoji-data.txt (default: data/emoji-data.txt)
 #   tokenizer_path: tokenizer.json (obrigatório para build; sem ele só fetch + validate em amostra)
-#   csv_out: CSV de saída (default: data/emoji_token_dataset.csv)
+#   csv_out: CSV de saída (default: data/emoji_dictionary.csv)
 
 set -e
 
 EMOJI_DATA="${1:-data/emoji-data.txt}"
 TOKENIZER="${2:-}"
-CSV_OUT="${3:-data/emoji_token_dataset.csv}"
+CSV_OUT="${3:-data/emoji_dictionary.csv}"
 BIN="target/release/e2t"
 
 echo "=== E2T Emoji para Token/Word — Reprodução ==="
@@ -44,9 +44,9 @@ if [[ -n "$TOKENIZER" && -f "$TOKENIZER" ]]; then
 else
     echo "Tokenizer não indicado ou ficheiro inexistente. A saltar build e validate do dataset completo."
     echo "Para build: ./scripts/reproduce.sh $EMOJI_DATA /caminho/para/tokenizer.json $CSV_OUT"
-    if [[ -f data/emoji_token_dataset_sample.csv ]]; then
+    if [[ -f data/emoji_dictionary_sample.csv ]]; then
         echo "Validar CSV de amostra:"
-        "$BIN" validate data/emoji_token_dataset_sample.csv
+        "$BIN" validate data/emoji_dictionary_sample.csv
     fi
 fi
 

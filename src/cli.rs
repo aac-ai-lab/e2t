@@ -1,13 +1,14 @@
 //! CLI do E2T: fetch-emoji-list, build, validate.
 
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::path::Path;
 
 use clap::{Parser, Subcommand};
 use tokenizers::Tokenizer;
 
-use crate::emoji_data::{read_emoji_codepoints_from_path, codepoint_hex};
+use crate::emoji_data::{codepoint_hex, read_emoji_codepoints_from_path};
+use crate::emoji_words::load_emoji_words;
 use crate::metrics::{validate_dataset, ValidationReport};
 
 #[derive(Parser)]
@@ -44,7 +45,7 @@ pub enum Commands {
         #[arg(long, default_value = "gpt2")]
         tokenizer_id: String,
         /// Ficheiro CSV de saída
-        #[arg(long, default_value = "data/emoji_token_dataset.csv")]
+        #[arg(long, default_value = "data/emoji_dictionary.csv")]
         output: String,
         /// Se emoji_list for emoji-data.txt, usar parser em vez de uma linha por emoji
         #[arg(long)]
@@ -55,8 +56,22 @@ pub enum Commands {
     #[command(name = "validate")]
     Validate {
         /// Ficheiro CSV do dataset
-        #[arg(default_value = "data/emoji_token_dataset.csv")]
+        #[arg(default_value = "data/emoji_dictionary.csv")]
         csv: String,
+    },
+
+    /// Converte frase com emojis em palavras (usa dicionário: emoji_dictionary.csv ou emoji_words.csv)
+    #[command(name = "to-words")]
+    ToWords {
+        /// Entrada: frase com emojis, ex. "[🧒, 🍎]" ou "🧒 🍎"
+        #[arg(default_value = "")]
+        input: String,
+        /// Ficheiro CSV do dicionário (emoji_dictionary.csv ou emoji_words.csv; usa coluna word se existir, senão token_strs)
+        #[arg(long, default_value = "data/emoji_dictionary.csv")]
+        dictionary: String,
+        /// Ler entrada de ficheiro em vez do argumento
+        #[arg(long)]
+        input_file: Option<String>,
     },
 }
 
@@ -70,8 +85,19 @@ pub fn run(cli: Cli) -> i32 {
             tokenizer_id,
             output,
             from_emoji_data,
-        } => cmd_build(&emoji_list, &tokenizer, &tokenizer_id, &output, from_emoji_data),
+        } => cmd_build(
+            &emoji_list,
+            &tokenizer,
+            &tokenizer_id,
+            &output,
+            from_emoji_data,
+        ),
         Commands::Validate { csv } => cmd_validate(&csv),
+        Commands::ToWords {
+            input,
+            dictionary,
+            input_file,
+        } => cmd_to_words(&input, &dictionary, input_file.as_deref()),
     }
 }
 
@@ -169,6 +195,7 @@ fn cmd_build(
         "n_tokens",
         "token_ids",
         "token_strs",
+        "word",
     ])
     .expect("write header");
 
@@ -196,6 +223,11 @@ fn cmd_build(
             .collect();
         let token_strs_str = token_strs.join(" ");
 
+        // Nome Unicode (ex.: GRINNING FACE) como "word" — dicionário completo e automático
+        let word = unicode_names2::name(*c)
+            .map(|n| n.to_string())
+            .unwrap_or_default();
+
         w.write_record(&[
             s.clone(),
             codepoint_hex(*c),
@@ -203,6 +235,7 @@ fn cmd_build(
             n.to_string(),
             token_ids_str,
             token_strs_str,
+            word,
         ])
         .expect("write row");
     }
@@ -225,5 +258,65 @@ fn cmd_validate(csv_path: &str) -> i32 {
         }
     };
     print!("{}", report);
+    0
+}
+
+/// Extrai sequência de emojis da entrada: "[🧒, 🍎]" ou "🧒 🍎" ou "🧒,🍎"
+fn parse_emoji_sequence(input: &str) -> Vec<String> {
+    let s = input.trim();
+    let inner = if s.starts_with('[') && s.ends_with(']') {
+        s[1..s.len() - 1].trim()
+    } else {
+        s
+    };
+    inner
+        .split(|c: char| c == ',' || c.is_whitespace())
+        .map(|part| part.trim().to_string())
+        .filter(|part| !part.is_empty())
+        .collect()
+}
+
+fn cmd_to_words(input: &str, dictionary_path: &str, input_file: Option<&str>) -> i32 {
+    let path = Path::new(dictionary_path);
+    if !path.exists() {
+        eprintln!("Dicionário não encontrado: {}", dictionary_path);
+        eprintln!(
+            "Use data/emoji_dictionary.csv (gerado por build) ou data/emoji_words.csv (emoji,word)"
+        );
+        return 1;
+    }
+    let dict = match load_emoji_words(path) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("Erro ao carregar dicionário: {}", e);
+            return 1;
+        }
+    };
+
+    let input_str = if let Some(file_path) = input_file {
+        match std::fs::read_to_string(file_path) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("Erro ao ler ficheiro {}: {}", file_path, e);
+                return 1;
+            }
+        }
+    } else if input.is_empty() {
+        let mut buf = String::new();
+        if std::io::stdin().read_to_string(&mut buf).is_err() {
+            eprintln!("Erro ao ler stdin");
+            return 1;
+        }
+        buf
+    } else {
+        input.to_string()
+    };
+
+    let emojis = parse_emoji_sequence(&input_str);
+    let words: Vec<&str> = emojis
+        .iter()
+        .map(|e| dict.get(e).map(|w| w.as_str()).unwrap_or(e.as_str()))
+        .collect();
+    println!("{}", words.join(" "));
     0
 }

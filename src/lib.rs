@@ -12,8 +12,10 @@
 
 pub mod cli;
 pub mod emoji_data;
+pub mod emoji_words;
 pub mod metrics;
 
-pub use emoji_data::{read_emoji_codepoints_from_path, codepoint_hex, EmojiDataError};
-pub use metrics::validate_dataset;
 pub use cli::run;
+pub use emoji_data::{codepoint_hex, read_emoji_codepoints_from_path, EmojiDataError};
+pub use emoji_words::load_emoji_words;
+pub use metrics::validate_dataset;

@@ -1,7 +1,7 @@
 //! Binário E2T: mapeamento emoji → token/word.
 
-use e2t::cli::{Cli, run};
 use clap::Parser;
+use e2t::cli::{run, Cli};
 
 fn main() {
     let cli = Cli::parse();

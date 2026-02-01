@@ -21,7 +21,7 @@ fn test_fetch_emoji_list_fixture() {
 
 #[test]
 fn test_validate_sample_csv() {
-    let path = Path::new("data/emoji_token_dataset_sample.csv");
+    let path = Path::new("data/emoji_dictionary_sample.csv");
     if !path.exists() {
         eprintln!("CSV de amostra não encontrado: {:?}", path);
         return;

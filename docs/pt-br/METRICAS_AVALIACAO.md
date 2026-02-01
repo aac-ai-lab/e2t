@@ -50,7 +50,7 @@ O projeto inclui **avaliação automática** do dataset emoji → token com as s
 ## Como obter as métricas
 
 ```bash
-e2t validate data/emoji_token_dataset.csv
+e2t validate data/emoji_dictionary.csv
 ```
 
 O relatório impresso inclui: total de linhas, média de tokens por emoji, contagem e percentagem de emojis em 1 token, distribuição de n_tokens (amostra) e, se aplicável, estatísticas por tokenizador.

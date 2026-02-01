@@ -20,23 +20,25 @@ pub struct EmojiTokenRow {
     pub token_ids: String,
     #[serde(rename = "token_strs")]
     pub token_strs: Option<String>,
+    /// Opcional: palavra em texto (para to-words usar este CSV como dicionário)
+    #[serde(default)]
+    pub word: Option<String>,
 }
 
 /// Lê o CSV do dataset e devolve as linhas e um resumo de métricas.
-pub fn validate_dataset(path: &Path) -> Result<(Vec<EmojiTokenRow>, ValidationReport), std::io::Error> {
+pub fn validate_dataset(
+    path: &Path,
+) -> Result<(Vec<EmojiTokenRow>, ValidationReport), std::io::Error> {
     let f = File::open(path)?;
-    let mut reader = ReaderBuilder::new()
-        .has_headers(true)
-        .from_reader(f);
+    let mut reader = ReaderBuilder::new().has_headers(true).from_reader(f);
     let mut rows = Vec::new();
     let mut n_tokens_dist: HashMap<u32, u64> = HashMap::new();
     let mut total_tokens: u64 = 0;
     let mut by_tokenizer: HashMap<String, (u64, u64)> = HashMap::new(); // (count, sum_tokens)
 
     for result in reader.deserialize() {
-        let row: EmojiTokenRow = result.map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string())
-        })?;
+        let row: EmojiTokenRow = result
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))?;
         *n_tokens_dist.entry(row.n_tokens).or_insert(0) += 1;
         total_tokens += row.n_tokens as u64;
         let ent = by_tokenizer
@@ -89,8 +91,16 @@ impl std::fmt::Display for ValidationReport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "=== E2T Validação do dataset emoji → token ===")?;
         writeln!(f, "Total de linhas: {}", self.total_rows)?;
-        writeln!(f, "Média de tokens por emoji: {:.4}", self.mean_tokens_per_emoji)?;
-        writeln!(f, "Emojis em 1 token: {} ({:.2}%)", self.single_token_count, self.pct_single_token)?;
+        writeln!(
+            f,
+            "Média de tokens por emoji: {:.4}",
+            self.mean_tokens_per_emoji
+        )?;
+        writeln!(
+            f,
+            "Emojis em 1 token: {} ({:.2}%)",
+            self.single_token_count, self.pct_single_token
+        )?;
         writeln!(f, "Emojis em >1 token: {}", self.multi_token_count)?;
         writeln!(f, "")?;
         writeln!(f, "Distribuição de n_tokens (amostra):")?;
@@ -110,7 +120,11 @@ impl std::fmt::Display for ValidationReport {
             } else {
                 0.0
             };
-            writeln!(f, "  {}: {} linhas, média {:.4} tokens/emoji", tid, count, mean)?;
+            writeln!(
+                f,
+                "  {}: {} linhas, média {:.4} tokens/emoji",
+                tid, count, mean
+            )?;
         }
         Ok(())
     }

@@ -1,20 +1,22 @@
 # E2T Emoji para Token/Word
 
-Projeto Rust para **mapear todos os emojis existentes** (Unicode, propriedade Emoji) à sua representação em **token(s)** para um ou mais tokenizadores, e opcionalmente em **palavra** (nome Unicode/CLDR).
+Projeto Rust para **gerar automaticamente o dicionário completo** emoji → token/word: para cada emoji (Unicode, propriedade Emoji) regista a tokenização (tokenizador) e a **palavra** (nome Unicode, ex.: GRINNING FACE). O ficheiro gerado **é** o dicionário — não há dataset separado.
 
 *Este trabalho integra **experimento**; a documentação foi organizada para suportar redação científica e reprodutibilidade. Ver [docs/pt-br/EXPERIMENTO_PESQUISA](docs/pt-br/EXPERIMENTO_PESQUISA.md) para enquadramento do experimento, limitações, citação e uso na tese.*
 
 **Fonte dos emojis:** [Unicode UTS #51](https://unicode.org/reports/tr51), ficheiro [emoji-data.txt](https://unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt) (primeira secção "Emoji").  
 **Tokenização:** Tokenizadores compatíveis com HuggingFace (ficheiro `tokenizer.json`).  
-**Saída:** CSV com colunas `emoji`, `codepoint_hex`, `tokenizer_id`, `n_tokens`, `token_ids`, `token_strs`.
+**Palavra (word):** Nome Unicode do caractere (ex.: GRINNING FACE, RED APPLE), gerado automaticamente durante o `build`.  
+**Saída:** Um único CSV que serve de **dicionário** — colunas `emoji`, `codepoint_hex`, `tokenizer_id`, `n_tokens`, `token_ids`, `token_strs`, `word`.
 
 **Documentação:** [Índice (pt-BR)](docs/pt-br/README.md) · [Experimento](docs/pt-br/EXPERIMENTO_PESQUISA.md) · [Dataset](docs/pt-br/DATASET_EMOJI_TOKEN.md) · [Métricas](docs/pt-br/METRICAS_AVALIACAO.md) · [Validação](docs/pt-br/VALIDACAO_DATASET.md). **Citação:** [CITATION.cff](CITATION.cff). **Histórico:** [CHANGELOG](CHANGELOG.md).
 
 ## Como funciona (replicabilidade)
 
 1. **Lista de emojis:** O subcomando `fetch-emoji-list` lê `emoji-data.txt`, interpreta linhas `XXXX ; Emoji` e `XXXX..YYYY ; Emoji`, expande intervalos e escreve um emoji por linha (um codepoint por linha). A lista segue a propriedade **Emoji** (UTS #51); emojis compostos (sequências ZWJ, etc.) não são expandidos nesta versão.
-2. **Tokenização:** O subcomando `build` carrega um tokenizador a partir de `tokenizer.json` (formato HuggingFace), codifica cada emoji como string e regista `n_tokens`, `token_ids` e `token_strs`.
-3. **Validação:** O subcomando `validate` lê o CSV e produz estatísticas: total de linhas, média de tokens por emoji, proporção de emojis em 1 token, distribuição de `n_tokens`, estatísticas por tokenizador.
+2. **Construção do dicionário:** O subcomando `build` gera o **dicionário completo** emoji → token/word: para cada emoji, carrega um tokenizador (HuggingFace), regista `n_tokens`, `token_ids`, `token_strs` e preenche automaticamente a coluna **`word`** com o nome Unicode do caractere (ex.: GRINNING FACE, RED APPLE). O ficheiro gerado é o dicionário — completo e automático.
+3. **Validação:** O subcomando `validate` lê o dicionário (CSV) e produz estatísticas: total de linhas, média de tokens por emoji, proporção de emojis em 1 token, distribuição de `n_tokens`, estatísticas por tokenizador.
+4. **Emoji → palavra (to-words):** Usa o dicionário gerado: dada uma frase com emojis (ex.: `[🧒, 🍎]`), devolve a sequência de palavras (coluna `word` do dicionário), ex.: CHILD RED APPLE.
 
 O processo é **determinístico** para a mesma versão de emoji-data e do mesmo ficheiro tokenizador.
 
@@ -33,8 +35,9 @@ e2t/
 ├── data/
 │   ├── emoji-data.txt          # (opcional) descarregar do Unicode
 │   ├── emoji_list.txt          # gerado por fetch-emoji-list
-│   ├── emoji_token_dataset.csv # gerado por build
-│   └── emoji_token_dataset_sample.csv  # amostra para testes
+│   ├── emoji_dictionary.csv # dicionário completo (build): emoji → token + word (nome Unicode)
+│   ├── emoji_dictionary_sample.csv  # amostra para testes
+│   └── emoji_words.csv         # opcional: mapeamentos custom (emoji, word)
 ├── docs/pt-br/                 # documentação científica
 ├── scripts/reproduce.sh
 ├── src/
@@ -67,6 +70,7 @@ cargo run --release -- <subcomando> [opções]
 | `fetch-emoji-list [input] [--output]` | Lê emoji-data.txt e escreve lista de emojis (um por linha) |
 | `build [emoji_list] --tokenizer <path> [--tokenizer-id] [--output] [--from-emoji-data]` | Tokeniza cada emoji e escreve CSV |
 | `validate [csv]` | Valida o dataset: estatísticas e distribuição de n_tokens |
+| `to-words [input] [--dictionary] [--input-file]` | Converte frase com emojis em palavras (usa dicionário emoji→palavra) |
 
 ### 1. Obter lista de emojis
 
@@ -88,7 +92,7 @@ cargo run --release -- fetch-emoji-list data/emoji-data.txt --output data/emoji_
 cargo run --release -- build data/emoji_list.txt \
   --tokenizer data/gpt2-tokenizer.json \
   --tokenizer-id gpt2 \
-  --output data/emoji_token_dataset.csv
+  --output data/emoji_dictionary.csv
 ```
 
 Ou usar emoji-data.txt diretamente:
@@ -98,16 +102,40 @@ cargo run --release -- build data/emoji-data.txt \
   --from-emoji-data \
   --tokenizer data/gpt2-tokenizer.json \
   --tokenizer-id gpt2 \
-  --output data/emoji_token_dataset.csv
+  --output data/emoji_dictionary.csv
 ```
 
 ### 3. Validar o dataset
 
 ```bash
-cargo run --release -- validate data/emoji_token_dataset.csv
+cargo run --release -- validate data/emoji_dictionary.csv
 ```
 
-## Formato do dataset (CSV)
+### 4. Emoji → palavra (to-words)
+
+Converte uma frase com emojis na sequência de **palavras** do dicionário (por defeito: `data/emoji_dictionary.csv`). O dicionário é o ficheiro gerado por `build` — a coluna **`word`** é preenchida automaticamente com o nome Unicode (ex.: CHILD, RED APPLE).
+
+**Entrada:** lista de emojis como `[🧒, 🍎]` ou `🧒 🍎` (separados por vírgula ou espaço).  
+**Saída:** palavras (coluna `word` do dicionário) separadas por espaço, ex.: CHILD RED APPLE.
+
+```bash
+# Usa o dicionário gerado por build (coluna word = nome Unicode)
+e2t to-words "[🧒, 🍎]"
+# → CHILD RED APPLE
+
+e2t to-words "🧒 🍎"
+
+# Dicionário alternativo (ex.: emoji_words.csv com mapeamentos custom em português)
+e2t to-words "[🧒, 🍎]" --dictionary data/emoji_words.csv
+# → CRIANÇA MAÇÃ (se emoji_words.csv tiver essas entradas)
+
+# Ler entrada de ficheiro
+e2t to-words "" --input-file frase.txt
+```
+
+O **dicionário** é o CSV gerado por `build`: colunas `emoji`, `codepoint_hex`, `tokenizer_id`, `n_tokens`, `token_ids`, `token_strs`, **`word`** (nome Unicode, gerado automaticamente). Para saída em português (ex.: CRIANÇA, MAÇÃ), podes usar um ficheiro custom como `emoji_words.csv` com `--dictionary`.
+
+## Formato do dicionário (CSV)
 
 | Coluna          | Descrição |
 |-----------------|-----------|
@@ -117,6 +145,7 @@ cargo run --release -- validate data/emoji_token_dataset.csv
 | `n_tokens`      | Número de tokens gerados |
 | `token_ids`     | IDs dos tokens (separados por espaço) |
 | `token_strs`    | Strings dos tokens (separadas por espaço) |
+| `word`          | Nome Unicode do caractere (ex.: GRINNING FACE), gerado automaticamente no build |
 
 ## Reprodução (um comando)
 
@@ -126,7 +155,7 @@ cargo run --release -- validate data/emoji_token_dataset.csv
 # Com tokenizer: fetch → build → validate.
 ```
 
-**Makefile:** `make help`, `make release`, `make test`, `make fetch-emoji-list`, `make build-dataset TOKENIZER=...`, `make validate`, `make reproduce`.
+**Makefile:** `make help`, `make release`, `make test`, `make fetch-emoji-list`, `make build-dictionary TOKENIZER=...`, `make validate`, `make reproduce`.
 
 ## Testes e CI
 

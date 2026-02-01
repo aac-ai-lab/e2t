@@ -7,11 +7,11 @@ title: "Validação do dataset"
 Este documento regista o **resultado da validação** obtido ao executar `e2t validate` sobre o CSV gerado. Os valores podem ser reproduzidos com:
 
 ```bash
-e2t build data/emoji_list.txt --tokenizer <path>/tokenizer.json --tokenizer-id <id> --output data/emoji_token_dataset.csv
-e2t validate data/emoji_token_dataset.csv
+e2t build data/emoji_list.txt --tokenizer <path>/tokenizer.json --tokenizer-id <id> --output data/emoji_dictionary.csv
+e2t validate data/emoji_dictionary.csv
 ```
 
-*(Ficheiro validado: `data/emoji_token_dataset.csv`. Lista de emojis: `data/emoji_list.txt` a partir de emoji-data.txt; tokenizador: gpt2.)*
+*(Ficheiro validado: `data/emoji_dictionary.csv`. Lista de emojis: `data/emoji_list.txt` a partir de emoji-data.txt; tokenizador: gpt2.)*
 
 ---
 
@@ -57,8 +57,8 @@ Para reproduzir estes números (com o mesmo emoji-data e tokenizador gpt2):
 
 ```bash
 e2t fetch-emoji-list data/emoji-data.txt --output data/emoji_list.txt
-e2t build data/emoji_list.txt --tokenizer data/gpt2-tokenizer.json --tokenizer-id gpt2 --output data/emoji_token_dataset.csv
-e2t validate data/emoji_token_dataset.csv
+e2t build data/emoji_list.txt --tokenizer data/gpt2-tokenizer.json --tokenizer-id gpt2 --output data/emoji_dictionary.csv
+e2t validate data/emoji_dictionary.csv
 ```
 
 *Relatório gerado pelo comando `e2t validate`. Para atualizar os números, re-executar o build e o validate.*

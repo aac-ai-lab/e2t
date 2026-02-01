@@ -2,11 +2,11 @@
 name = "e2t"
 version = "0.1.0"
 edition = "2021"
-description = "Mapeamento emoji → token/word: dataset e métricas para tokenização de emojis"
+description = "Dicionário emoji → token/word: geração automática e completa a partir de Unicode e tokenizador"
 readme = "README.md"
 license = "MIT"
 repository = "https://github.com/SEU-USUARIO/e2t"
-keywords = ["emoji", "tokenization", "Unicode", "NLP", "dataset"]
+keywords = ["emoji", "tokenization", "Unicode", "NLP", "dictionary"]
 
 default-run = "e2t"
 
@@ -22,6 +22,7 @@ tokenizers = "0.19"
 walkdir = "2"
 thiserror = "1.0"
 anyhow = "1.0"
+unicode_names2 = "2"
 
 [dev-dependencies]
 tempfile = "3"
