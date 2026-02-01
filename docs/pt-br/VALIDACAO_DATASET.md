@@ -7,7 +7,7 @@ title: "Validação do dataset"
 Este documento regista o **resultado da validação** obtido ao executar `e2t validate` sobre o CSV gerado. Os valores podem ser reproduzidos com:
 
 ```bash
-e2t build --emoji-list data/emoji_list.txt --tokenizer <path>/tokenizer.json --tokenizer-id <id> --output data/emoji_token_dataset.csv
+e2t build data/emoji_list.txt --tokenizer <path>/tokenizer.json --tokenizer-id <id> --output data/emoji_token_dataset.csv
 e2t validate data/emoji_token_dataset.csv
 ```
 

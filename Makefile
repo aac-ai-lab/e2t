@@ -59,11 +59,11 @@ clean:
 	cargo clean
 
 fetch-emoji-list: release
-	$(BIN) fetch-emoji-list --input $(EMOJI_DATA) --output $(EMOJI_LIST)
+	$(BIN) fetch-emoji-list $(EMOJI_DATA) --output $(EMOJI_LIST)
 
 build-dataset: release
 	@if [ -z "$(TOKENIZER)" ]; then echo "Erro: defina TOKENIZER=/path/to/tokenizer.json"; exit 1; fi
-	$(BIN) build --emoji-list $(EMOJI_LIST) --tokenizer $(TOKENIZER) --tokenizer-id $(TOKENIZER_ID) --output $(CSV_OUT)
+	$(BIN) build $(EMOJI_LIST) --tokenizer $(TOKENIZER) --tokenizer-id $(TOKENIZER_ID) --output $(CSV_OUT)
 
 validate: release
 	$(BIN) validate $(CSV_VALID)

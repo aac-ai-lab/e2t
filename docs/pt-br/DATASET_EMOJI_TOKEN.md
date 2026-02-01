@@ -45,11 +45,11 @@ Encoding: UTF-8. Separador CSV: vírgula. Aspas quando necessário.
 
 ```bash
 # 1. Obter lista de emojis (requer emoji-data.txt em data/)
-e2t fetch-emoji-list --input data/emoji-data.txt --output data/emoji_list.txt
+e2t fetch-emoji-list data/emoji-data.txt --output data/emoji_list.txt
 
 # 2. Descarregar tokenizer (ex.: GPT-2) e construir dataset
 #    Exemplo: wget -O data/gpt2-tokenizer.json https://huggingface.co/gpt2/raw/main/tokenizer.json
-e2t build --emoji-list data/emoji_list.txt --tokenizer data/gpt2-tokenizer.json --tokenizer-id gpt2 --output data/emoji_token_dataset.csv
+e2t build data/emoji_list.txt --tokenizer data/gpt2-tokenizer.json --tokenizer-id gpt2 --output data/emoji_token_dataset.csv
 
 # 3. Validar
 e2t validate --csv data/emoji_token_dataset.csv
@@ -58,7 +58,7 @@ e2t validate --csv data/emoji_token_dataset.csv
 Alternativa: usar emoji-data.txt diretamente no build com `--from-emoji-data`:
 
 ```bash
-e2t build --emoji-list data/emoji-data.txt --from-emoji-data --tokenizer data/gpt2-tokenizer.json --tokenizer-id gpt2 --output data/emoji_token_dataset.csv
+e2t build data/emoji-data.txt --from-emoji-data --tokenizer data/gpt2-tokenizer.json --tokenizer-id gpt2 --output data/emoji_token_dataset.csv
 ```
 
 ---

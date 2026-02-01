@@ -64,8 +64,8 @@ cargo run --release -- <subcomando> [opções]
 
 | Subcomando | Descrição |
 |------------|-----------|
-| `fetch-emoji-list [--input] [--output]` | Lê emoji-data.txt e escreve lista de emojis (um por linha) |
-| `build --tokenizer <path> [--emoji-list] [--tokenizer-id] [--output] [--from-emoji-data]` | Tokeniza cada emoji e escreve CSV |
+| `fetch-emoji-list [input] [--output]` | Lê emoji-data.txt e escreve lista de emojis (um por linha) |
+| `build [emoji_list] --tokenizer <path> [--tokenizer-id] [--output] [--from-emoji-data]` | Tokeniza cada emoji e escreve CSV |
 | `validate [csv]` | Valida o dataset: estatísticas e distribuição de n_tokens |
 
 ### 1. Obter lista de emojis
@@ -76,7 +76,7 @@ cargo run --release -- <subcomando> [opções]
 
 cargo run --release -- fetch-emoji-list
 # ou:
-cargo run --release -- fetch-emoji-list --input data/emoji-data.txt --output data/emoji_list.txt
+cargo run --release -- fetch-emoji-list data/emoji-data.txt --output data/emoji_list.txt
 ```
 
 ### 2. Construir o dataset (requer tokenizer.json)
@@ -85,8 +85,7 @@ cargo run --release -- fetch-emoji-list --input data/emoji-data.txt --output dat
 # Exemplo: descarregar tokenizer GPT-2
 # wget -O data/gpt2-tokenizer.json https://huggingface.co/gpt2/raw/main/tokenizer.json
 
-cargo run --release -- build \
-  --emoji-list data/emoji_list.txt \
+cargo run --release -- build data/emoji_list.txt \
   --tokenizer data/gpt2-tokenizer.json \
   --tokenizer-id gpt2 \
   --output data/emoji_token_dataset.csv
@@ -95,8 +94,7 @@ cargo run --release -- build \
 Ou usar emoji-data.txt diretamente:
 
 ```bash
-cargo run --release -- build \
-  --emoji-list data/emoji-data.txt \
+cargo run --release -- build data/emoji-data.txt \
   --from-emoji-data \
   --tokenizer data/gpt2-tokenizer.json \
   --tokenizer-id gpt2 \

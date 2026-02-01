@@ -25,19 +25,19 @@ fi
 
 if [[ -f "$EMOJI_DATA" ]]; then
     echo "1. Gerar lista de emojis a partir de $EMOJI_DATA"
-    "$BIN" fetch-emoji-list --input "$EMOJI_DATA" --output data/emoji_list.txt
+    "$BIN" fetch-emoji-list "$EMOJI_DATA" --output data/emoji_list.txt
     echo ""
 else
     echo "Aviso: $EMOJI_DATA não encontrado. Descarregue de https://unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt"
     echo "A usar fixtures para teste (fetch a partir de tests/fixtures/emoji-data-sample.txt)."
-    "$BIN" fetch-emoji-list --input tests/fixtures/emoji-data-sample.txt --output /tmp/emoji_list_fixtures.txt
+    "$BIN" fetch-emoji-list tests/fixtures/emoji-data-sample.txt --output /tmp/emoji_list_fixtures.txt
     EMOJI_LIST="/tmp/emoji_list_fixtures.txt"
     CSV_OUT="/tmp/emoji_token_fixtures.csv"
 fi
 
 if [[ -n "$TOKENIZER" && -f "$TOKENIZER" ]]; then
     echo "2. Construir dataset → $CSV_OUT"
-    "$BIN" build --emoji-list "${EMOJI_LIST:-data/emoji_list.txt}" --tokenizer "$TOKENIZER" --tokenizer-id gpt2 --output "$CSV_OUT"
+    "$BIN" build "${EMOJI_LIST:-data/emoji_list.txt}" --tokenizer "$TOKENIZER" --tokenizer-id gpt2 --output "$CSV_OUT"
     echo ""
     echo "3. Validar dataset"
     "$BIN" validate "$CSV_OUT"

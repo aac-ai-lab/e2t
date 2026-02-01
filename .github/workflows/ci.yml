@@ -52,7 +52,7 @@ jobs:
         run: ./target/release/e2t --help
 
       - name: Fetch emoji list (fixtures)
-        run: ./target/release/e2t fetch-emoji-list --input tests/fixtures/emoji-data-sample.txt --output /tmp/emoji_list.txt
+        run: ./target/release/e2t fetch-emoji-list tests/fixtures/emoji-data-sample.txt --output /tmp/emoji_list.txt
 
       - name: Validate sample CSV
         run: ./target/release/e2t validate data/emoji_token_dataset_sample.csv
