@@ -1,0 +1,7 @@
+# Sample emoji-data.txt (first "Emoji" block only)
+# Format: codepoint or range ; Emoji
+0023 ; Emoji # E0.0 [#] hash
+0030..0031 ; Emoji # E0.0 [2] digits
+1F600 ; Emoji # E1.0 [1] grinning face
+1F601 ; Emoji # E0.6 [1] beaming face
+231A..231B ; Emoji_Presentation # other section - stop here
