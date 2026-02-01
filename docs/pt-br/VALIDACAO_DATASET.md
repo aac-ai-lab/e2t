@@ -11,30 +11,28 @@ e2t build data/emoji_list.txt --tokenizer <path>/tokenizer.json --tokenizer-id <
 e2t validate data/emoji_token_dataset.csv
 ```
 
-*(A lista de emojis depende de `data/emoji_list.txt` ou de `data/emoji-data.txt`; o tokenizador depende do ficheiro indicado em `--tokenizer`.)*
+*(Ficheiro validado: `data/emoji_token_dataset.csv`. Lista de emojis: `data/emoji_list.txt` a partir de emoji-data.txt; tokenizador: gpt2.)*
 
 ---
 
-## Resumo (exemplo)
+## Resumo
 
-| Métrica | Descrição |
-|--------|------------|
-| Total de linhas | Número de pares (emoji, tokenização) no CSV |
-| Média de tokens por emoji | Soma de n_tokens / total de linhas |
-| Emojis em 1 token | Contagem e percentagem de linhas com n_tokens == 1 |
-| Emojis em >1 token | Restantes linhas |
-| Distribuição de n_tokens | Histograma (1, 2, 3, … tokens) |
-| Por tokenizer | Se houver vários tokenizer_id, médias e contagens por id |
-
-*(Os valores numéricos concretos dependem da versão de emoji-data, do tokenizador e do número de emojis processados. Preencher após uma execução real ou manter como template.)*
+| Métrica | Valor |
+|--------|--------|
+| Total de linhas | 1 438 |
+| Média de tokens por emoji | 2,82 |
+| Emojis em 1 token | 18 (1,25%) |
+| Emojis em >1 token | 1 420 |
+| Distribuição n_tokens (1 / 2 / 3) | 18 / 223 / 1 197 |
+| Por tokenizer (gpt2) | 1 438 linhas, média 2,82 tokens/emoji |
 
 ---
 
 ## 1. Estatísticas descritivas
 
-- **Total de emojis (linhas):** Conforme gerado por `e2t fetch-emoji-list` a partir de emoji-data.txt (ex.: ~1424 para a secção “Emoji” do Unicode 15.0).
-- **Média de tokens por emoji:** Típico para tokenizadores BPE (ex.: GPT-2) que não têm vocabulário específico para emojis: muitos emojis em 2–4 tokens; média > 1.
-- **Proporção 1-token:** Em tokenizadores treinados sobretudo em texto ASCII/UTF-8 comum, a proporção de emojis em 1 token pode ser baixa; tokenizadores com mais cobertura de Unicode podem ter percentagem mais alta.
+- **Total de emojis (linhas):** **1 438** — gerado por `e2t fetch-emoji-list` a partir de emoji-data.txt (propriedade Emoji, primeira secção).
+- **Média de tokens por emoji:** **2,82** — o tokenizador GPT-2 (BPE) representa a maioria dos emojis em 2 ou 3 tokens; apenas 18 emojis (dígitos 0–9, #, *, ©, ®, etc.) ficam em 1 token.
+- **Proporção 1-token:** **1,25%** — esperado para GPT-2, treinado sobretudo em texto; a grande maioria dos emojis Unicode é segmentada em vários tokens.
 
 ---
 
@@ -50,5 +48,17 @@ e2t validate data/emoji_token_dataset.csv
 - Emojis compostos (sequências) não estão incluídos na lista base (um codepoint por emoji).
 
 ---
+
+---
+
+## Reprodução
+
+Para reproduzir estes números (com o mesmo emoji-data e tokenizador gpt2):
+
+```bash
+e2t fetch-emoji-list data/emoji-data.txt --output data/emoji_list.txt
+e2t build data/emoji_list.txt --tokenizer data/gpt2-tokenizer.json --tokenizer-id gpt2 --output data/emoji_token_dataset.csv
+e2t validate data/emoji_token_dataset.csv
+```
 
 *Relatório gerado pelo comando `e2t validate`. Para atualizar os números, re-executar o build e o validate.*
