@@ -57,8 +57,11 @@ Para reproduzir estes números (com o mesmo emoji-data e tokenizador gpt2):
 
 ```bash
 e2t fetch-emoji-list data/emoji-data.txt --output data/emoji_list.txt
+# Opcional: python3 scripts/fetch_cldr_pt_br.py --output data/cldr_emoji_pt_br.csv
 e2t build data/emoji_list.txt --tokenizer data/gpt2-tokenizer.json --tokenizer-id gpt2 --output data/emoji_dictionary.csv
 e2t validate data/emoji_dictionary.csv
 ```
+
+O dataset gerado inclui as colunas **word_en** e **word_pt_br**; para preencher `word_pt_br` com termos em português (CLDR), gerar `data/cldr_emoji_pt_br.csv` com `python3 scripts/fetch_cldr_pt_br.py` antes do build.
 
 *Relatório gerado pelo comando `e2t validate`. Para atualizar os números, re-executar o build e o validate.*

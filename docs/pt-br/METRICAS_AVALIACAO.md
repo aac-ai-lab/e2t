@@ -57,4 +57,4 @@ O relatório impresso inclui: total de linhas, média de tokens por emoji, conta
 
 ---
 
-*Convenção: cada linha do CSV = um emoji + um tokenizador; as métricas são calculadas sobre o conjunto de todas as linhas (ou por tokenizer_id).*
+*Convenção: cada linha do CSV = um emoji + um tokenizador; as métricas são calculadas sobre o conjunto de todas as linhas (ou por tokenizer_id). O CSV inclui ainda as colunas **word_en** e **word_pt_br** para mapeamento emoji → palavra (inglês e pt-BR via CLDR ou ficheiro custom).*

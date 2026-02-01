@@ -31,10 +31,10 @@ Este documento enquadra o projeto **E2T Emoji para Token/Word** como **experimen
 | **Fonte de emojis** | README, `data/emoji-data.txt`, docs/DATASET_EMOJI_TOKEN.md | Unicode UTS #51, emoji-data.txt, primeira secção "Emoji" |
 | **Método de mapeamento** | README (“Como funciona”), `src/emoji_data.rs`, `src/cli.rs` | Parser emoji-data, tokenização com tokenizer.json |
 | **Pipeline e reprodutibilidade** | README (CLI), Cargo.toml, `scripts/reproduce.sh`, CLI `e2t` | Passos para replicar: fetch-emoji-list → build → validate |
-| **Dataset gerado** | docs/DATASET_EMOJI_TOKEN.md, README (Formato do dataset) | Estrutura CSV: emoji, codepoint_hex, tokenizer_id, n_tokens, token_ids, token_strs |
+| **Dataset gerado** | docs/DATASET_EMOJI_TOKEN.md, README (Formato do dataset) | Estrutura CSV: emoji, codepoint_hex, tokenizer_id, n_tokens, token_ids, token_strs, word_en, word_pt_br (CLDR ou custom) |
 | **Validação e métricas** | docs/VALIDACAO_DATASET.md, docs/METRICAS_AVALIACAO.md, subcomando `e2t validate` | Distribuição de n_tokens, % 1-token, média por tokenizador |
 | **Testes e CI** | README (Testes e CI), `tests/`, `tests/fixtures/`, `.github/workflows/ci.yml` | Testes unitários (parser, codepoint_hex); CI (fmt, clippy, test, build) |
-| **Limitações** | README, docs | Apenas propriedade Emoji (um codepoint); tokenizador local (ficheiro); sem nomes CLDR neste pipeline base |
+| **Limitações** | README, docs | Apenas propriedade Emoji (um codepoint); tokenizador local (ficheiro); word_pt_br depende de data/cldr_emoji_pt_br.csv (CLDR) ou ficheiro custom |
 | **Licença e citação** | LICENSE (MIT), CITATION.cff | Licença do software; citação em formato máquina (GitHub/Zenodo) |
 | **Histórico** | CHANGELOG.md | Versões e alterações (Keep a Changelog) |
 
@@ -54,7 +54,7 @@ Este documento enquadra o projeto **E2T Emoji para Token/Word** como **experimen
 
 - A lista de emojis considera apenas a **propriedade Emoji** (primeira secção de emoji-data.txt); **emojis compostos** (sequências com ZWJ, modificadores de tom, etc.) não são expandidos nesta versão (cada codepoint é tratado individualmente).
 - **Tokenizador:** requer ficheiro local `tokenizer.json`; não há descarga automática do HuggingFace Hub no pipeline Rust (pode ser feita por script externo).
-- **“Word”:** mapeamento emoji → palavra (nome Unicode ou CLDR) não está incluído no pipeline base; pode ser adicionado via dados auxiliares (UnicodeData.txt, CLDR).
+- **“Word”:** mapeamento emoji → palavra está incluído: **word_en** (nome Unicode em minúsculas) e **word_pt_br** (termos em português via CLDR — gerar `data/cldr_emoji_pt_br.csv` com `python3 scripts/fetch_cldr_pt_br.py` — ou ficheiro custom com `--words-pt-br`). Subcomando `to-words` com `--lang en` ou `--lang pt-br`.
 - **Versão Unicode:** os resultados dependem da versão de emoji-data.txt utilizada (ex.: 15.0, 16.0); documentar a versão na validação.
 
 ---
@@ -69,7 +69,7 @@ Este documento enquadra o projeto **E2T Emoji para Token/Word** como **experimen
 
 Para citar o experimento ou o pipeline na tese ou em artigos:
 
-> O mapeamento emoji → token foi obtido com o pipeline E2T (Emoji para Token/Word): lista de emojis a partir de Unicode emoji-data.txt (UTS #51), tokenização com tokenizadores compatíveis HuggingFace (tokenizer.json), dataset CSV com emoji, codepoint_hex, tokenizer_id, n_tokens, token_ids e token_strs; validação com distribuição de n_tokens e estatísticas por tokenizador. Documentação e código disponíveis no repositório do projeto.
+> O mapeamento emoji → token foi obtido com o pipeline E2T (Emoji para Token/Word): lista de emojis a partir de Unicode emoji-data.txt (UTS #51), tokenização com tokenizadores compatíveis HuggingFace (tokenizer.json), dataset CSV com emoji, codepoint_hex, tokenizer_id, n_tokens, token_ids, token_strs, word_en e word_pt_br (nomes em inglês e pt-BR via CLDR ou ficheiro custom); validação com distribuição de n_tokens e estatísticas por tokenizador. Documentação e código disponíveis no repositório do projeto.
 
 O repositório inclui **CITATION.cff** para citação automática (GitHub, Zenodo).
 
@@ -77,7 +77,7 @@ O repositório inclui **CITATION.cff** para citação automática (GitHub, Zenod
 
 ## 8. Trabalho futuro (sugestões para a tese)
 
-- Inclusão de **emojis compostos** (sequências ZWJ, bandeiras, etc.) e de **nomes** (Unicode/CLDR) como “word”.
+- Inclusão de **emojis compostos** (sequências ZWJ, bandeiras, etc.). Os nomes em inglês (**word_en**) e em pt-BR (**word_pt_br**, via CLDR ou custom) já estão no dataset.
 - Suporte a **múltiplos tokenizadores** no mesmo dataset (uma linha por par emoji+tokenizer).
 - Comparação entre tokenizadores (proporção 1-token, custo em tokens em modelos de linguagem).
 - Integração com **tiktoken** (OpenAI) ou outros backends além de tokenizer.json.
