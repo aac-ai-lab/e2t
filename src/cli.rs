@@ -223,9 +223,9 @@ fn cmd_build(
             .collect();
         let token_strs_str = token_strs.join(" ");
 
-        // Nome Unicode (ex.: GRINNING FACE) como "word" — dicionário completo e automático
+        // Nome Unicode em minúsculas (ex.: grinning face) como "word" — dicionário completo e automático
         let word = unicode_names2::name(*c)
-            .map(|n| n.to_string())
+            .map(|n| n.to_string().to_lowercase())
             .unwrap_or_default();
 
         w.write_record(&[
