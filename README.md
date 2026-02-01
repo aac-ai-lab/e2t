@@ -184,7 +184,7 @@ O Makefile expõe os subcomandos do E2T como alvos. Lista completa: `make help`.
 | `make fetch-emoji-list` | Gera a lista de emojis (usa `EMOJI_DATA`, escreve em `EMOJI_LIST`) |
 | `make build-dictionary` | Constrói o CSV do dicionário — **requer** `TOKENIZER=...` |
 | `make validate` | Valida o CSV e mostra estatísticas |
-| `make to-words` | Converte emojis em palavras (usa `INPUT`, `LANG`, `DICTIONARY`) |
+| `make to-words` | Converte emojis em palavras (usa `INPUT`, `E2T_LANG`, `DICTIONARY`) |
 | `make reproduce` | Executa fetch → build → validate (script `reproduce.sh`) |
 
 ### Variáveis (opcionais)
@@ -199,7 +199,7 @@ O Makefile expõe os subcomandos do E2T como alvos. Lista completa: `make help`.
 | `CSV_VALID` | validate | `data/emoji_dictionary.csv` | CSV a validar |
 | `DICTIONARY` | to-words | `data/emoji_dictionary.csv` | CSV do dicionário para to-words |
 | `INPUT` | to-words | (vazio) | Texto com emojis a converter; se vazio, lê de stdin |
-| `LANG` | to-words | (vazio) | `en` ou `pt-br` — coluna word_en ou word_pt_br |
+| `E2T_LANG` | to-words | (vazio) | `en` ou `pt-br` — coluna word_en ou word_pt_br (não usar `LANG`; conflito com locale do sistema) |
 
 ### Exemplos com make
 
@@ -227,11 +227,11 @@ make to-words INPUT="🧒 🍎"
 # → child red apple
 
 # Emojis → palavras em pt-BR
-make to-words INPUT="🧒 🍎" LANG=pt-br
+make to-words INPUT="🧒 🍎" E2T_LANG=pt-br
 # → criança maçã
 
 # to-words com dicionário alternativo
-make to-words INPUT="😀 👍" DICTIONARY=data/emoji_dictionary.csv LANG=pt-br
+make to-words INPUT="😀 👍" DICTIONARY=data/emoji_dictionary.csv E2T_LANG=pt-br
 
 # Reprodução completa (fetch + build + validate)
 make reproduce EMOJI_DATA=data/emoji-data.txt TOKENIZER=data/gpt2-tokenizer.json

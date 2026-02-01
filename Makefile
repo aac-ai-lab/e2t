@@ -7,7 +7,7 @@
 #
 # Variáveis (exemplos):
 #   TOKENIZER=data/gpt2-tokenizer.json   (obrigatório em build-dictionary)
-#   INPUT="🧒 🍎"   LANG=pt-br           (to-words: texto e idioma)
+#   INPUT="🧒 🍎"   E2T_LANG=pt-br       (to-words: texto e idioma; não usar LANG — conflito com locale)
 #   DICTIONARY=data/emoji_dictionary.csv (to-words: ficheiro do dicionário)
 #
 # Ver README.md secção "Uso com Make" para tabela completa e exemplos.
@@ -22,7 +22,7 @@ CSV_VALID   ?= data/emoji_dictionary.csv
 
 DICTIONARY ?= data/emoji_dictionary.csv
 INPUT       ?=
-LANG        ?=
+E2T_LANG    ?=
 
 .PHONY: help build release test fmt fmt-check clippy check clean
 .PHONY: fetch-emoji-list build-dictionary validate to-words reproduce install
@@ -42,7 +42,7 @@ help:
 	@echo "  make fetch-emoji-list [EMOJI_DATA=data/emoji-data.txt] [EMOJI_LIST=data/emoji_list.txt]"
 	@echo "  make build-dictionary   Requer TOKENIZER=/path/to/tokenizer.json [EMOJI_LIST=...] [CSV_OUT=...]"
 	@echo "  make validate [CSV_VALID=...]"
-	@echo "  make to-words [INPUT=\"🧒 🍎\"] [LANG=en|pt-br] [DICTIONARY=...]  Converte emojis em palavras"
+	@echo "  make to-words [INPUT=\"🧒 🍎\"] [E2T_LANG=en|pt-br] [DICTIONARY=...]  Converte emojis em palavras"
 	@echo "  make reproduce       Requer EMOJI_DATA; opcional TOKENIZER para build completo"
 	@echo ""
 	@echo "Exemplo:"
@@ -50,7 +50,7 @@ help:
 	@echo "  make build-dictionary TOKENIZER=data/gpt2-tokenizer.json CSV_OUT=data/emoji_dictionary.csv"
 	@echo "  make validate CSV_VALID=data/emoji_dictionary.csv"
 	@echo "  make to-words INPUT=\"🧒 🍎\""
-	@echo "  make to-words INPUT=\"🧒 🍎\" LANG=pt-br"
+	@echo "  make to-words INPUT=\"🧒 🍎\" E2T_LANG=pt-br"
 
 build:
 	cargo build
@@ -89,7 +89,7 @@ validate: release
 to-words: release
 	@if [ -z "$(INPUT)" ]; then $(BIN) to-words --dictionary $(DICTIONARY); else \
 		CMD="$(BIN) to-words \"$(INPUT)\" --dictionary $(DICTIONARY)"; \
-		[ -n "$(LANG)" ] && CMD="$$CMD --lang $(LANG)"; \
+		[ -n "$(E2T_LANG)" ] && CMD="$$CMD --lang $(E2T_LANG)"; \
 		eval "$$CMD"; \
 	fi
 
