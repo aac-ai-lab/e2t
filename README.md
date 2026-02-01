@@ -170,7 +170,74 @@ O **dicionário** é o CSV gerado por `build`: colunas `word_en` (nome Unicode e
 # Com tokenizer: fetch → build → validate.
 ```
 
-**Makefile:** `make help`, `make release`, `make test`, `make fetch-emoji-list`, `make build-dictionary TOKENIZER=...`, `make validate`, `make reproduce`.
+---
+
+## Uso com Make
+
+O Makefile expõe os subcomandos do E2T como alvos. Lista completa: `make help`.
+
+### Alvos principais
+
+| Alvo | Descrição |
+|------|-----------|
+| `make release` | Compila o binário em modo release (`target/release/e2t`) |
+| `make fetch-emoji-list` | Gera a lista de emojis (usa `EMOJI_DATA`, escreve em `EMOJI_LIST`) |
+| `make build-dictionary` | Constrói o CSV do dicionário — **requer** `TOKENIZER=...` |
+| `make validate` | Valida o CSV e mostra estatísticas |
+| `make to-words` | Converte emojis em palavras (usa `INPUT`, `LANG`, `DICTIONARY`) |
+| `make reproduce` | Executa fetch → build → validate (script `reproduce.sh`) |
+
+### Variáveis (opcionais)
+
+| Variável | Alvo(s) | Valor por defeito | Descrição |
+|----------|---------|-------------------|-----------|
+| `EMOJI_DATA` | fetch-emoji-list, reproduce | `data/emoji-data.txt` | Ficheiro emoji-data.txt |
+| `EMOJI_LIST` | fetch-emoji-list, build-dictionary | `data/emoji_list.txt` | Lista de emojis (um por linha) |
+| `TOKENIZER` | build-dictionary, reproduce | — | Caminho para `tokenizer.json` (obrigatório em build-dictionary) |
+| `TOKENIZER_ID` | build-dictionary | `gpt2` | Identificador do tokenizador no CSV |
+| `CSV_OUT` | build-dictionary, reproduce | `data/emoji_dictionary.csv` | CSV de saída do build |
+| `CSV_VALID` | validate | `data/emoji_dictionary.csv` | CSV a validar |
+| `DICTIONARY` | to-words | `data/emoji_dictionary.csv` | CSV do dicionário para to-words |
+| `INPUT` | to-words | (vazio) | Texto com emojis a converter; se vazio, lê de stdin |
+| `LANG` | to-words | (vazio) | `en` ou `pt-br` — coluna word_en ou word_pt_br |
+
+### Exemplos com make
+
+```bash
+# Ver todos os alvos
+make help
+
+# Compilar e gerar lista de emojis
+make release && make fetch-emoji-list
+
+# Construir dicionário (obrigatório indicar TOKENIZER)
+make build-dictionary TOKENIZER=data/gpt2-tokenizer.json
+
+# Com termos pt-BR (CLDR em data/cldr_emoji_pt_br.csv ou custom)
+make build-dictionary TOKENIZER=data/gpt2-tokenizer.json \
+  CSV_OUT=data/emoji_dictionary.csv
+
+# Validar o CSV gerado
+make validate
+# ou com outro ficheiro:
+make validate CSV_VALID=data/emoji_dictionary.csv
+
+# Emojis → palavras (inglês, padrão)
+make to-words INPUT="🧒 🍎"
+# → child red apple
+
+# Emojis → palavras em pt-BR
+make to-words INPUT="🧒 🍎" LANG=pt-br
+# → criança maçã
+
+# to-words com dicionário alternativo
+make to-words INPUT="😀 👍" DICTIONARY=data/emoji_dictionary.csv LANG=pt-br
+
+# Reprodução completa (fetch + build + validate)
+make reproduce EMOJI_DATA=data/emoji-data.txt TOKENIZER=data/gpt2-tokenizer.json
+```
+
+**Nota:** Para `make to-words` é necessário passar o texto na variável **`INPUT=`** (por exemplo `make to-words INPUT="🧒 🍎"`). O comando `make to-words "🧒 🍎"` não funciona: o Make interpreta `"🧒 🍎"` como outro alvo.
 
 ## Testes e CI
 

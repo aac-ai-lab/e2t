@@ -1,5 +1,16 @@
 # E2T Emoji para Token/Word — Makefile
+#
 # Uso: make [alvo]   ou   make help
+#
+# Alvos principais:
+#   release, fetch-emoji-list, build-dictionary (TOKENIZER=...), validate, to-words, reproduce
+#
+# Variáveis (exemplos):
+#   TOKENIZER=data/gpt2-tokenizer.json   (obrigatório em build-dictionary)
+#   INPUT="🧒 🍎"   LANG=pt-br           (to-words: texto e idioma)
+#   DICTIONARY=data/emoji_dictionary.csv (to-words: ficheiro do dicionário)
+#
+# Ver README.md secção "Uso com Make" para tabela completa e exemplos.
 
 BIN         = target/release/e2t
 EMOJI_DATA  ?= data/emoji-data.txt
@@ -9,8 +20,12 @@ TOKENIZER_ID ?= gpt2
 CSV_OUT     ?= data/emoji_dictionary.csv
 CSV_VALID   ?= data/emoji_dictionary.csv
 
+DICTIONARY ?= data/emoji_dictionary.csv
+INPUT       ?=
+LANG        ?=
+
 .PHONY: help build release test fmt fmt-check clippy check clean
-.PHONY: fetch-emoji-list build-dictionary validate reproduce install
+.PHONY: fetch-emoji-list build-dictionary validate to-words reproduce install
 
 help:
 	@echo "E2T Emoji para Token/Word — alvos disponíveis:"
@@ -27,12 +42,15 @@ help:
 	@echo "  make fetch-emoji-list [EMOJI_DATA=data/emoji-data.txt] [EMOJI_LIST=data/emoji_list.txt]"
 	@echo "  make build-dictionary   Requer TOKENIZER=/path/to/tokenizer.json [EMOJI_LIST=...] [CSV_OUT=...]"
 	@echo "  make validate [CSV_VALID=...]"
+	@echo "  make to-words [INPUT=\"🧒 🍎\"] [LANG=en|pt-br] [DICTIONARY=...]  Converte emojis em palavras"
 	@echo "  make reproduce       Requer EMOJI_DATA; opcional TOKENIZER para build completo"
 	@echo ""
 	@echo "Exemplo:"
 	@echo "  make release && make fetch-emoji-list"
 	@echo "  make build-dictionary TOKENIZER=data/gpt2-tokenizer.json CSV_OUT=data/emoji_dictionary.csv"
 	@echo "  make validate CSV_VALID=data/emoji_dictionary.csv"
+	@echo "  make to-words INPUT=\"🧒 🍎\""
+	@echo "  make to-words INPUT=\"🧒 🍎\" LANG=pt-br"
 
 build:
 	cargo build
@@ -67,6 +85,13 @@ build-dictionary: release
 
 validate: release
 	$(BIN) validate $(CSV_VALID)
+
+to-words: release
+	@if [ -z "$(INPUT)" ]; then $(BIN) to-words --dictionary $(DICTIONARY); else \
+		CMD="$(BIN) to-words \"$(INPUT)\" --dictionary $(DICTIONARY)"; \
+		[ -n "$(LANG)" ] && CMD="$$CMD --lang $(LANG)"; \
+		eval "$$CMD"; \
+	fi
 
 reproduce:
 	./scripts/reproduce.sh $(EMOJI_DATA) '$(TOKENIZER)' $(CSV_OUT)

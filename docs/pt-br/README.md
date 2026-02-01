@@ -13,4 +13,4 @@
 
 O dataset inclui colunas **word_en** (nome Unicode em inglês, minúsculas) e **word_pt_br** (termos em português via [CLDR](https://github.com/unicode-org/cldr-json) ou ficheiro custom; gerar `data/cldr_emoji_pt_br.csv` com `python3 scripts/fetch_cldr_pt_br.py`). O subcomando `to-words` aceita `--lang en` ou `--lang pt-br`.
 
-Ver também o [README principal](../../README.md) do repositório para CLI, comandos e reprodução.
+Ver também o [README principal](../../README.md) do repositório para CLI, comandos, **uso com Make** (alvos, variáveis e exemplos) e reprodução.
