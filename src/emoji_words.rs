@@ -2,8 +2,8 @@
 //!
 //! Suporta dois formatos:
 //! - **emoji_words.csv:** colunas `emoji`, `word`
-//! - **emoji_dictionary.csv:** colunas `emoji`, …, `token_strs`, e opcionalmente `word`.
-//!   Se existir coluna `word` preenchida, usa-se; senão usa-se `token_strs`.
+//! - **emoji_dictionary.csv:** colunas `emoji`, …, `token_strs`, e opcionalmente `word_en`, `word_pt_br` ou `word`.
+//!   Com `lang`: pt-br usa `word_pt_br` se existir, senão `word_en`/`word`; en usa `word_en`/`word`, senão `word_pt_br`.
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -14,9 +14,12 @@ use csv::ReaderBuilder;
 /// Carrega o dicionário emoji → string a partir de um CSV.
 /// Aceita:
 /// - CSV com colunas `emoji` e `word` (ex.: emoji_words.csv)
-/// - CSV com colunas `emoji` e `token_strs`, e opcionalmente `word` (ex.: emoji_dictionary.csv).
-///   Se a linha tiver `word` não vazio, usa `word`; senão usa `token_strs`.
-pub fn load_emoji_words(path: &Path) -> Result<HashMap<String, String>, std::io::Error> {
+/// - CSV com colunas `emoji`, `word_en`, `word_pt_br` e/ou `word`, `token_strs` (ex.: emoji_dictionary.csv).
+/// `lang`: `Some("pt-br")` prefere word_pt_br; `Some("en")` ou `None` prefere word_en/word.
+pub fn load_emoji_words(
+    path: &Path,
+    lang: Option<&str>,
+) -> Result<HashMap<String, String>, std::io::Error> {
     let f = File::open(path)?;
     let mut reader = ReaderBuilder::new().has_headers(true).from_reader(f);
     let headers = reader
@@ -32,6 +35,12 @@ pub fn load_emoji_words(path: &Path) -> Result<HashMap<String, String>, std::io:
     let word_idx = headers
         .iter()
         .position(|h| h.trim().eq_ignore_ascii_case("word"));
+    let word_en_idx = headers
+        .iter()
+        .position(|h| h.trim().eq_ignore_ascii_case("word_en"));
+    let word_pt_br_idx = headers
+        .iter()
+        .position(|h| h.trim().eq_ignore_ascii_case("word_pt_br"));
     let token_strs_idx = headers
         .iter()
         .position(|h| h.trim().eq_ignore_ascii_case("token_strs"));
@@ -43,16 +52,28 @@ pub fn load_emoji_words(path: &Path) -> Result<HashMap<String, String>, std::io:
         if emoji.is_empty() {
             continue;
         }
-        let value = word_idx
-            .and_then(|i| record.get(i))
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .or_else(|| {
-                token_strs_idx
-                    .and_then(|i| record.get(i))
-                    .map(|s| s.trim().to_string())
-            })
-            .unwrap_or_else(|| emoji.clone());
+        let get = |idx: Option<usize>| {
+            idx.and_then(|i| record.get(i))
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+        };
+        let word = get(word_idx);
+        let word_en = get(word_en_idx);
+        let word_pt_br = get(word_pt_br_idx);
+        let token_strs = token_strs_idx.and_then(|i| record.get(i)).map(|s| s.trim().to_string());
+
+        let value = if lang == Some("pt-br") {
+            word_pt_br
+                .or(word_en)
+                .or(word)
+                .or(token_strs)
+        } else {
+            word_en
+                .or(word)
+                .or(word_pt_br)
+                .or(token_strs)
+        }
+        .unwrap_or_else(|| emoji.clone());
         map.insert(emoji, value);
     }
     Ok(map)
@@ -74,7 +95,7 @@ mod tests {
         f.sync_all().unwrap();
         drop(f);
 
-        let dict = load_emoji_words(&path).unwrap();
+        let dict = load_emoji_words(&path, None).unwrap();
         assert_eq!(dict.get("🧒"), Some(&"CRIANÇA".to_string()));
         assert_eq!(dict.get("🍎"), Some(&"MAÇÃ".to_string()));
     }
@@ -94,7 +115,7 @@ mod tests {
         f.sync_all().unwrap();
         drop(f);
 
-        let dict = load_emoji_words(&path).unwrap();
+        let dict = load_emoji_words(&path, None).unwrap();
         assert_eq!(dict.get("🧒"), Some(&"ðŁ § Ĵ".to_string()));
         assert_eq!(dict.get("🍎"), Some(&"ðŁ į İ".to_string()));
     }

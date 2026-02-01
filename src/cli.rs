@@ -47,6 +47,9 @@ pub enum Commands {
         /// Ficheiro CSV de saída
         #[arg(long, default_value = "data/emoji_dictionary.csv")]
         output: String,
+        /// CSV emoji,word com termos em pt-BR (preenche coluna word_pt_br)
+        #[arg(long)]
+        words_pt_br: Option<String>,
         /// Se emoji_list for emoji-data.txt, usar parser em vez de uma linha por emoji
         #[arg(long)]
         from_emoji_data: bool,
@@ -69,6 +72,9 @@ pub enum Commands {
         /// Ficheiro CSV do dicionário (emoji_dictionary.csv ou emoji_words.csv; usa coluna word se existir, senão token_strs)
         #[arg(long, default_value = "data/emoji_dictionary.csv")]
         dictionary: String,
+        /// Idioma da coluna word a usar: en (word_en) ou pt-br (word_pt_br)
+        #[arg(long, value_parser = ["en", "pt-br"])]
+        lang: Option<String>,
         /// Ler entrada de ficheiro em vez do argumento
         #[arg(long)]
         input_file: Option<String>,
@@ -84,20 +90,23 @@ pub fn run(cli: Cli) -> i32 {
             tokenizer,
             tokenizer_id,
             output,
+            words_pt_br,
             from_emoji_data,
         } => cmd_build(
             &emoji_list,
             &tokenizer,
             &tokenizer_id,
             &output,
+            words_pt_br.as_deref(),
             from_emoji_data,
         ),
         Commands::Validate { csv } => cmd_validate(&csv),
         Commands::ToWords {
             input,
             dictionary,
+            lang,
             input_file,
-        } => cmd_to_words(&input, &dictionary, input_file.as_deref()),
+        } => cmd_to_words(&input, &dictionary, lang.as_deref(), input_file.as_deref()),
     }
 }
 
@@ -162,6 +171,7 @@ fn cmd_build(
     tokenizer_path: &str,
     tokenizer_id: &str,
     output: &str,
+    words_pt_br_path: Option<&str>,
     from_emoji_data: bool,
 ) -> i32 {
     let emojis = match load_emoji_list(emoji_list, from_emoji_data) {
@@ -184,6 +194,29 @@ fn cmd_build(
         }
     };
 
+    let custom_pt_br: std::collections::HashMap<String, String> = if let Some(p) = words_pt_br_path {
+        match load_emoji_words(Path::new(p), None) {
+            Ok(m) => m,
+            Err(e) => {
+                eprintln!("Erro ao carregar palavras pt-BR de {}: {}", p, e);
+                return 1;
+            }
+        }
+    } else {
+        std::collections::HashMap::new()
+    };
+
+    // CLDR pt (anotações oficiais em português): data/cldr_emoji_pt_br.csv — preenche word_pt_br só com pt
+    let cldr_pt_br_path = Path::new("data/cldr_emoji_pt_br.csv");
+    let cldr_pt_br: std::collections::HashMap<String, String> = if cldr_pt_br_path.exists() {
+        match load_emoji_words(cldr_pt_br_path, None) {
+            Ok(m) => m,
+            Err(_) => std::collections::HashMap::new(),
+        }
+    } else {
+        std::collections::HashMap::new()
+    };
+
     let mut w = csv::Writer::from_path(output).unwrap_or_else(|e| {
         eprintln!("Erro ao criar CSV {}: {}", output, e);
         std::process::exit(1);
@@ -195,7 +228,8 @@ fn cmd_build(
         "n_tokens",
         "token_ids",
         "token_strs",
-        "word",
+        "word_en",
+        "word_pt_br",
     ])
     .expect("write header");
 
@@ -223,9 +257,14 @@ fn cmd_build(
             .collect();
         let token_strs_str = token_strs.join(" ");
 
-        // Nome Unicode em minúsculas (ex.: grinning face) como "word" — dicionário completo e automático
-        let word = unicode_names2::name(*c)
+        let word_en = unicode_names2::name(*c)
             .map(|n| n.to_string().to_lowercase())
+            .unwrap_or_default();
+        // word_pt_br: só em português — --words-pt-br (custom) ou data/cldr_emoji_pt_br.csv (CLDR pt)
+        let word_pt_br = custom_pt_br
+            .get(&s)
+            .or_else(|| cldr_pt_br.get(&s))
+            .cloned()
             .unwrap_or_default();
 
         w.write_record(&[
@@ -235,7 +274,8 @@ fn cmd_build(
             n.to_string(),
             token_ids_str,
             token_strs_str,
-            word,
+            word_en,
+            word_pt_br,
         ])
         .expect("write row");
     }
@@ -276,7 +316,12 @@ fn parse_emoji_sequence(input: &str) -> Vec<String> {
         .collect()
 }
 
-fn cmd_to_words(input: &str, dictionary_path: &str, input_file: Option<&str>) -> i32 {
+fn cmd_to_words(
+    input: &str,
+    dictionary_path: &str,
+    lang: Option<&str>,
+    input_file: Option<&str>,
+) -> i32 {
     let path = Path::new(dictionary_path);
     if !path.exists() {
         eprintln!("Dicionário não encontrado: {}", dictionary_path);
@@ -285,7 +330,7 @@ fn cmd_to_words(input: &str, dictionary_path: &str, input_file: Option<&str>) ->
         );
         return 1;
     }
-    let dict = match load_emoji_words(path) {
+    let dict = match load_emoji_words(path, lang) {
         Ok(d) => d,
         Err(e) => {
             eprintln!("Erro ao carregar dicionário: {}", e);

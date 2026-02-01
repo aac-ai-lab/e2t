@@ -37,9 +37,12 @@ e2t/
 │   ├── emoji_list.txt          # gerado por fetch-emoji-list
 │   ├── emoji_dictionary.csv # dicionário completo (build): emoji → token + word (nome Unicode)
 │   ├── emoji_dictionary_sample.csv  # amostra para testes
+│   ├── cldr_emoji_pt_br.csv    # termos pt-BR do CLDR (gerar: python3 scripts/fetch_cldr_pt_br.py)
+│   ├── emoji_words_pt_br.csv   # opcional: termos custom pt-BR para --words-pt-br
 │   └── emoji_words.csv         # opcional: mapeamentos custom (emoji, word)
 ├── docs/pt-br/                 # documentação científica
 ├── scripts/reproduce.sh
+├── scripts/fetch_cldr_pt_br.py  # gera data/cldr_emoji_pt_br.csv a partir do CLDR
 ├── src/
 │   ├── lib.rs
 │   ├── main.rs
@@ -145,7 +148,8 @@ O **dicionário** é o CSV gerado por `build`: colunas `emoji`, `codepoint_hex`,
 | `n_tokens`      | Número de tokens gerados |
 | `token_ids`     | IDs dos tokens (separados por espaço) |
 | `token_strs`    | Strings dos tokens (separadas por espaço) |
-| `word`          | Nome Unicode do caractere (ex.: GRINNING FACE), gerado automaticamente no build |
+| `word_en`       | Nome Unicode em inglês, minúsculas (ex.: grinning face), gerado no build |
+| `word_pt_br`    | Termo em pt-BR: `--words-pt-br` (custom) ou `data/cldr_emoji_pt_br.csv` (CLDR pt; gerar com `python3 scripts/fetch_cldr_pt_br.py`) — só português, sem fallback para inglês |
 
 ## Reprodução (um comando)
 

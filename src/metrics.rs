@@ -20,7 +20,13 @@ pub struct EmojiTokenRow {
     pub token_ids: String,
     #[serde(rename = "token_strs")]
     pub token_strs: Option<String>,
-    /// Opcional: palavra em texto (para to-words usar este CSV como dicionário)
+    /// Palavra em inglês (nome Unicode em minúsculas)
+    #[serde(default)]
+    pub word_en: Option<String>,
+    /// Palavra em pt-BR (dicionário opcional)
+    #[serde(default)]
+    pub word_pt_br: Option<String>,
+    /// Legado: palavra em texto (equiv. word_en)
     #[serde(default)]
     pub word: Option<String>,
 }
