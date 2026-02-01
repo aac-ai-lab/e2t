@@ -11,7 +11,8 @@ Todas as alterações notáveis ao projeto E2T estão documentadas neste ficheir
 - Opção `--words-pt-br <csv>` no `build`: ficheiro custom (emoji, word) para preencher `word_pt_br`; sobrepõe CLDR quando ambos existem.
 - Subcomando `to-words`: opção `--lang en` ou `--lang pt-br` para escolher a coluna word_en ou word_pt_br na saída.
 - Script `scripts/fetch_cldr_pt_br.py`: descarrega anotações CLDR pt e gera `data/cldr_emoji_pt_br.csv` (formato emoji, word).
-- Documentação atualizada: README, docs/pt-br (DATASET_EMOJI_TOKEN, EXPERIMENTO_PESQUISA, METRICAS_AVALIACAO, VALIDACAO_DATASET, README) com word_en, word_pt_br, CLDR e script.
+- Makefile: alvo `to-words` com variáveis `INPUT`, `E2T_LANG` (não usar `LANG`; conflito com locale), `DICTIONARY`.
+- Documentação atualizada: README (uso com Make), docs/pt-br (DATASET_EMOJI_TOKEN, EXPERIMENTO_PESQUISA, METRICAS_AVALIACAO, VALIDACAO_DATASET, README) com word_en, word_pt_br, CLDR e script.
 
 ---
 

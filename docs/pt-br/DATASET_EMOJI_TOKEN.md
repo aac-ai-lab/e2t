@@ -58,7 +58,7 @@ e2t build data/emoji_list.txt --tokenizer data/gpt2-tokenizer.json --tokenizer-i
 # Com termos custom pt-BR: --words-pt-br data/emoji_words_pt_br.csv
 
 # 4. Validar
-e2t validate --csv data/emoji_dictionary.csv
+e2t validate data/emoji_dictionary.csv
 ```
 
 Alternativa: usar emoji-data.txt diretamente no build com `--from-emoji-data`:

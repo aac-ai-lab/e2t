@@ -243,7 +243,7 @@ make reproduce EMOJI_DATA=data/emoji-data.txt TOKENIZER=data/gpt2-tokenizer.json
 
 - **Testes unitários:** `cargo test` (parser emoji-data, codepoint_hex).
 - **Testes de integração:** `tests/integration_test.rs` — fetch em fixtures, validate no CSV de amostra.
-- **CI (GitHub Actions):** em cada push/PR em `main`/`master`, executa fmt, clippy, testes, build release, fetch em fixtures e validate no CSV de amostra.
+- **CI (GitHub Actions):** em cada push/PR em `gh-pages`, `main` ou `master`, executa fmt, clippy, testes, build release, fetch em fixtures e validate no CSV de amostra.
 
 ## Limitações
 
