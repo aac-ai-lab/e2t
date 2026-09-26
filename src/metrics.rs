@@ -108,7 +108,7 @@ impl std::fmt::Display for ValidationReport {
             self.single_token_count, self.pct_single_token
         )?;
         writeln!(f, "Emojis em >1 token: {}", self.multi_token_count)?;
-        writeln!(f, "")?;
+        writeln!(f)?;
         writeln!(f, "Distribuição de n_tokens (amostra):")?;
         let mut dist_vec: Vec<_> = self.n_tokens_distribution.iter().collect();
         dist_vec.sort_by_key(|(k, _)| *k);
@@ -118,7 +118,7 @@ impl std::fmt::Display for ValidationReport {
         if dist_vec.len() > 15 {
             writeln!(f, "  ... ({} valores distintos)", dist_vec.len())?;
         }
-        writeln!(f, "")?;
+        writeln!(f)?;
         writeln!(f, "Por tokenizer:")?;
         for (tid, (count, sum_tok)) in &self.by_tokenizer {
             let mean = if *count > 0 {

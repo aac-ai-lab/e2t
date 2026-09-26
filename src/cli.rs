@@ -7,7 +7,9 @@ use std::path::Path;
 use clap::{Parser, Subcommand};
 use tokenizers::Tokenizer;
 
-use crate::emoji_data::{codepoint_hex, read_emoji_codepoints_from_path};
+use crate::emoji_data::{
+    emoji_hex, read_emoji_codepoints_from_path, read_emoji_sequences_from_path, word_en_for_emoji,
+};
 use crate::emoji_words::load_emoji_words;
 use crate::metrics::{validate_dataset, ValidationReport};
 
@@ -30,6 +32,12 @@ pub enum Commands {
         /// Ficheiro de saída (um emoji por linha)
         #[arg(long, default_value = "data/emoji_list.txt")]
         output: String,
+        /// Não incluir sequências de data/emoji-zwj-sequences.txt / emoji-sequences.txt
+        #[arg(long)]
+        no_sequences: bool,
+        /// Ficheiro extra de sequências (emoji-zwj-sequences.txt ou emoji-sequences.txt)
+        #[arg(long)]
+        sequences: Vec<String>,
     },
 
     /// Constrói o dataset CSV: para cada emoji, tokeniza e regista n_tokens e token_ids
@@ -84,7 +92,12 @@ pub enum Commands {
 /// Ponto de entrada da CLI. Retorna código de saída (0 = ok, não-zero = erro).
 pub fn run(cli: Cli) -> i32 {
     match cli.command {
-        Commands::FetchEmojiList { input, output } => cmd_fetch_emoji_list(&input, &output),
+        Commands::FetchEmojiList {
+            input,
+            output,
+            no_sequences,
+            sequences,
+        } => cmd_fetch_emoji_list(&input, &output, !no_sequences, &sequences),
         Commands::Build {
             emoji_list,
             tokenizer,
@@ -110,11 +123,18 @@ pub fn run(cli: Cli) -> i32 {
     }
 }
 
-fn cmd_fetch_emoji_list(input: &str, output: &str) -> i32 {
+fn cmd_fetch_emoji_list(
+    input: &str,
+    output: &str,
+    include_sequences: bool,
+    extra_sequences: &[String],
+) -> i32 {
     let path = Path::new(input);
     if !path.exists() {
         eprintln!("Ficheiro não encontrado: {}", input);
-        eprintln!("Descarregue emoji-data.txt de https://unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt");
+        eprintln!(
+            "Descarregue emoji-data.txt de https://unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt"
+        );
         return 1;
     }
     let codepoints = match read_emoji_codepoints_from_path(path) {
@@ -124,6 +144,51 @@ fn cmd_fetch_emoji_list(input: &str, output: &str) -> i32 {
             return 1;
         }
     };
+
+    let mut seen = std::collections::HashSet::new();
+    let mut list: Vec<String> = Vec::new();
+    for c in &codepoints {
+        let s = c.to_string();
+        if seen.insert(s.clone()) {
+            list.push(s);
+        }
+    }
+
+    let mut seq_paths: Vec<String> = Vec::new();
+    if include_sequences {
+        for candidate in ["data/emoji-zwj-sequences.txt", "data/emoji-sequences.txt"] {
+            if Path::new(candidate).exists() {
+                seq_paths.push(candidate.to_string());
+            }
+        }
+    }
+    for p in extra_sequences {
+        seq_paths.push(p.clone());
+    }
+
+    let mut n_seq = 0usize;
+    for sp in &seq_paths {
+        let path = Path::new(sp);
+        if !path.exists() {
+            eprintln!("Ficheiro de sequências não encontrado: {}", sp);
+            return 1;
+        }
+        match read_emoji_sequences_from_path(path) {
+            Ok(seqs) => {
+                for s in seqs {
+                    if seen.insert(s.clone()) {
+                        list.push(s);
+                        n_seq += 1;
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("Erro ao ler sequências de {}: {}", sp, e);
+                return 1;
+            }
+        }
+    }
+
     let mut f = match File::create(output) {
         Ok(f) => f,
         Err(e) => {
@@ -131,38 +196,44 @@ fn cmd_fetch_emoji_list(input: &str, output: &str) -> i32 {
             return 1;
         }
     };
-    for c in &codepoints {
-        if writeln!(f, "{}", c).is_err() {
+    for s in &list {
+        if writeln!(f, "{}", s).is_err() {
             eprintln!("Erro ao escrever emoji");
             return 1;
         }
     }
-    eprintln!("Escritos {} emojis em {}", codepoints.len(), output);
+    eprintln!(
+        "Escritos {} emojis em {} ({} codepoints + {} sequências novas)",
+        list.len(),
+        output,
+        codepoints.len(),
+        n_seq
+    );
     0
 }
 
-fn load_emoji_list(emoji_list_path: &str, from_emoji_data: bool) -> Result<Vec<char>, String> {
+fn load_emoji_list(emoji_list_path: &str, from_emoji_data: bool) -> Result<Vec<String>, String> {
     let path = Path::new(emoji_list_path);
     if !path.exists() {
         return Err(format!("Ficheiro não encontrado: {}", emoji_list_path));
     }
     if from_emoji_data {
-        read_emoji_codepoints_from_path(path).map_err(|e| e.to_string())
+        read_emoji_codepoints_from_path(path)
+            .map(|chars| chars.into_iter().map(|c| c.to_string()).collect())
+            .map_err(|e| e.to_string())
     } else {
         let f = File::open(path).map_err(|e| e.to_string())?;
-        let mut chars = Vec::new();
+        let mut items = Vec::new();
         for line in BufReader::new(f).lines() {
             let line = line.map_err(|e| e.to_string())?;
             let line = line.trim();
             if line.is_empty() {
                 continue;
             }
-            // Uma linha = um emoji (um caractere; lista gerada por fetch-emoji-list)
-            if let Some(c) = line.chars().next() {
-                chars.push(c);
-            }
+            // Uma linha = um emoji (codepoint único ou sequência ZWJ/bandeira)
+            items.push(line.to_string());
         }
-        Ok(chars)
+        Ok(items)
     }
 }
 
@@ -189,12 +260,15 @@ fn cmd_build(
         Ok(t) => t,
         Err(e) => {
             eprintln!("Erro ao carregar tokenizer de {}: {}", tokenizer_path, e);
-            eprintln!("Descarregue tokenizer.json (ex.: HuggingFace gpt2) e indique o caminho com --tokenizer");
+            eprintln!(
+                "Descarregue tokenizer.json (ex.: make fetch-tokenizer) e indique --tokenizer"
+            );
             return 1;
         }
     };
 
-    let custom_pt_br: std::collections::HashMap<String, String> = if let Some(p) = words_pt_br_path {
+    let custom_pt_br: std::collections::HashMap<String, String> = if let Some(p) = words_pt_br_path
+    {
         match load_emoji_words(Path::new(p), None) {
             Ok(m) => m,
             Err(e) => {
@@ -209,10 +283,7 @@ fn cmd_build(
     // CLDR pt (anotações oficiais em português): data/cldr_emoji_pt_br.csv — preenche word_pt_br só com pt
     let cldr_pt_br_path = Path::new("data/cldr_emoji_pt_br.csv");
     let cldr_pt_br: std::collections::HashMap<String, String> = if cldr_pt_br_path.exists() {
-        match load_emoji_words(cldr_pt_br_path, None) {
-            Ok(m) => m,
-            Err(_) => std::collections::HashMap::new(),
-        }
+        load_emoji_words(cldr_pt_br_path, None).unwrap_or_default()
     } else {
         std::collections::HashMap::new()
     };
@@ -221,7 +292,7 @@ fn cmd_build(
         eprintln!("Erro ao criar CSV {}: {}", output, e);
         std::process::exit(1);
     });
-    w.write_record(&[
+    w.write_record([
         "emoji",
         "codepoint_hex",
         "tokenizer_id",
@@ -233,8 +304,7 @@ fn cmd_build(
     ])
     .expect("write header");
 
-    for c in &emojis {
-        let s: String = c.to_string();
+    for s in &emojis {
         let encoding = tokenizer.encode(s.clone(), true).map_err(|e| e.to_string());
         let encoding = match encoding {
             Ok(e) => e,
@@ -253,23 +323,21 @@ fn cmd_build(
         let token_strs: Vec<String> = encoding
             .get_tokens()
             .iter()
-            .map(|s| s.to_string())
+            .map(|t| t.to_string())
             .collect();
         let token_strs_str = token_strs.join(" ");
 
-        let word_en = unicode_names2::name(*c)
-            .map(|n| n.to_string().to_lowercase())
-            .unwrap_or_default();
+        let word_en = word_en_for_emoji(s);
         // word_pt_br: só em português — --words-pt-br (custom) ou data/cldr_emoji_pt_br.csv (CLDR pt)
         let word_pt_br = custom_pt_br
-            .get(&s)
-            .or_else(|| cldr_pt_br.get(&s))
+            .get(s)
+            .or_else(|| cldr_pt_br.get(s))
             .cloned()
             .unwrap_or_default();
 
-        w.write_record(&[
+        w.write_record([
             s.clone(),
-            codepoint_hex(*c),
+            emoji_hex(s),
             tokenizer_id.to_string(),
             n.to_string(),
             token_ids_str,

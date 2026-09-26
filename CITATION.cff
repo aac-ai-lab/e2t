@@ -1,24 +1,24 @@
 # Formato CITATION.cff para citação do software (GitHub/Zenodo)
-# Ajuste title, authors, repository-url e version conforme o seu repositório.
 cff-version: "1.2.0"
 title: "E2T Emoji para Token/Word"
 message: "Se usar este software, cite-o utilizando os metadados deste ficheiro."
 type: software
 authors:
-  - family-names: "Apelido"
-    given-names: "Nome"
-version: "0.1.0"
-date-released: "2026-02-01"
-url: "https://github.com/SEU-USUARIO/e2t"
-repository-code: "https://github.com/SEU-USUARIO/e2t"
+  - name: "AAC AI Lab"
+version: "0.2.0"
+date-released: "2026-09-26"
+url: "https://aac-ai-lab.github.io/e2t/"
+repository-code: "https://github.com/aac-ai-lab/e2t"
 keywords:
   - emoji
   - tokenization
   - Unicode
   - UTS 51
   - dataset
+  - AAC
 license: "MIT"
 abstract: >
-  E2T é uma ferramenta e biblioteca para mapear todos os emojis (Unicode, propriedade Emoji)
-  à sua representação em tokens para um ou mais tokenizadores (formato HuggingFace),
-  produzindo um dataset CSV com emoji, codepoint_hex, tokenizer_id, n_tokens, token_ids e token_strs.
+  E2T é uma ferramenta e biblioteca para mapear emojis Unicode (propriedade Emoji
+  e sequências ZWJ/RGI) à sua representação em tokens para tokenizadores HuggingFace,
+  produzindo um dicionário CSV com emoji, codepoint_hex, tokenizer_id, n_tokens,
+  token_ids, token_strs, word_en e word_pt_br.

@@ -15,6 +15,7 @@ use csv::ReaderBuilder;
 /// Aceita:
 /// - CSV com colunas `emoji` e `word` (ex.: emoji_words.csv)
 /// - CSV com colunas `emoji`, `word_en`, `word_pt_br` e/ou `word`, `token_strs` (ex.: emoji_dictionary.csv).
+///
 /// `lang`: `Some("pt-br")` prefere word_pt_br; `Some("en")` ou `None` prefere word_en/word.
 pub fn load_emoji_words(
     path: &Path,
@@ -60,18 +61,14 @@ pub fn load_emoji_words(
         let word = get(word_idx);
         let word_en = get(word_en_idx);
         let word_pt_br = get(word_pt_br_idx);
-        let token_strs = token_strs_idx.and_then(|i| record.get(i)).map(|s| s.trim().to_string());
+        let token_strs = token_strs_idx
+            .and_then(|i| record.get(i))
+            .map(|s| s.trim().to_string());
 
         let value = if lang == Some("pt-br") {
-            word_pt_br
-                .or(word_en)
-                .or(word)
-                .or(token_strs)
+            word_pt_br.or(word_en).or(word).or(token_strs)
         } else {
-            word_en
-                .or(word)
-                .or(word_pt_br)
-                .or(token_strs)
+            word_en.or(word).or(word_pt_br).or(token_strs)
         }
         .unwrap_or_else(|| emoji.clone());
         map.insert(emoji, value);

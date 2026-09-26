@@ -1,11 +1,11 @@
 [package]
 name = "e2t"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Dicionário emoji → token/word: geração automática e completa a partir de Unicode e tokenizador"
 readme = "README.md"
 license = "MIT"
-repository = "https://github.com/SEU-USUARIO/e2t"
+repository = "https://github.com/aac-ai-lab/e2t"
 keywords = ["emoji", "tokenization", "Unicode", "NLP", "dictionary"]
 
 default-run = "e2t"

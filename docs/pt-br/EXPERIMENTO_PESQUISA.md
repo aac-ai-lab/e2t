@@ -52,16 +52,16 @@ Este documento enquadra o projeto **E2T Emoji para Token/Word** como **experimen
 
 ## 5. Limitações (para discussão na tese)
 
-- A lista de emojis considera apenas a **propriedade Emoji** (primeira secção de emoji-data.txt); **emojis compostos** (sequências com ZWJ, modificadores de tom, etc.) não são expandidos nesta versão (cada codepoint é tratado individualmente).
-- **Tokenizador:** requer ficheiro local `tokenizer.json`; não há descarga automática do HuggingFace Hub no pipeline Rust (pode ser feita por script externo).
-- **“Word”:** mapeamento emoji → palavra está incluído: **word_en** (nome Unicode em minúsculas) e **word_pt_br** (termos em português via CLDR — gerar `data/cldr_emoji_pt_br.csv` com `python3 scripts/fetch_cldr_pt_br.py` — ou ficheiro custom com `--words-pt-br`). Subcomando `to-words` com `--lang en` ou `--lang pt-br`.
-- **Versão Unicode:** os resultados dependem da versão de emoji-data.txt utilizada (ex.: 15.0, 16.0); documentar a versão na validação.
+- **Sequências:** a lista completa de compostos (ZWJ, bandeiras, etc.) depende de `emoji-zwj-sequences.txt` / `emoji-sequences.txt` em `data/` (`make fetch-data`). Sem esses ficheiros, só entra a propriedade Emoji de `emoji-data.txt`.
+- **Tokenizador:** requer ficheiro local `tokenizer.json`; a descarga do Hub é feita por script/Make (`make fetch-tokenizer`), não dentro do binário Rust.
+- **“Word”:** mapeamento emoji → palavra está incluído: **word_en** (nome Unicode em minúsculas; sequências = nomes unidos) e **word_pt_br** (CLDR ou `--words-pt-br`). Subcomando `to-words` com `--lang en` ou `--lang pt-br`.
+- **Versão Unicode:** os resultados dependem da versão de emoji-data.txt / sequences utilizada; documentar a versão na validação.
 
 ---
 
 ## 6. Ética e uso de dados
 
-- Os dados Unicode (emoji-data.txt) são **públicos** e regidos pelos [termos de uso do Unicode](https://www.unicode.org/terms_of_use.html). Os tokenizadores (ex.: GPT-2) seguem as licenças dos respetivos modelos (HuggingFace, etc.).
+- Os dados Unicode (emoji-data.txt e ficheiros de sequências) são **públicos** e regidos pelos [termos de uso do Unicode](https://www.unicode.org/terms_of_use.html). Os tokenizadores (ex.: GPT-2) seguem as licenças dos respetivos modelos (HuggingFace, etc.).
 
 ---
 
@@ -69,7 +69,7 @@ Este documento enquadra o projeto **E2T Emoji para Token/Word** como **experimen
 
 Para citar o experimento ou o pipeline na tese ou em artigos:
 
-> O mapeamento emoji → token foi obtido com o pipeline E2T (Emoji para Token/Word): lista de emojis a partir de Unicode emoji-data.txt (UTS #51), tokenização com tokenizadores compatíveis HuggingFace (tokenizer.json), dataset CSV com emoji, codepoint_hex, tokenizer_id, n_tokens, token_ids, token_strs, word_en e word_pt_br (nomes em inglês e pt-BR via CLDR ou ficheiro custom); validação com distribuição de n_tokens e estatísticas por tokenizador. Documentação e código disponíveis no repositório do projeto.
+> O mapeamento emoji → token foi obtido com o pipeline E2T (Emoji para Token/Word): lista de emojis a partir de Unicode emoji-data.txt e ficheiros de sequências (UTS #51), tokenização com tokenizadores compatíveis HuggingFace (tokenizer.json), dataset CSV com emoji, codepoint_hex, tokenizer_id, n_tokens, token_ids, token_strs, word_en e word_pt_br (nomes em inglês e pt-BR via CLDR ou ficheiro custom); validação com distribuição de n_tokens e estatísticas por tokenizador. Documentação e código: https://github.com/aac-ai-lab/e2t
 
 O repositório inclui **CITATION.cff** para citação automática (GitHub, Zenodo).
 
@@ -77,11 +77,11 @@ O repositório inclui **CITATION.cff** para citação automática (GitHub, Zenod
 
 ## 8. Trabalho futuro (sugestões para a tese)
 
-- Inclusão de **emojis compostos** (sequências ZWJ, bandeiras, etc.). Os nomes em inglês (**word_en**) e em pt-BR (**word_pt_br**, via CLDR ou custom) já estão no dataset.
 - Suporte a **múltiplos tokenizadores** no mesmo dataset (uma linha por par emoji+tokenizer).
 - Comparação entre tokenizadores (proporção 1-token, custo em tokens em modelos de linguagem).
 - Integração com **tiktoken** (OpenAI) ou outros backends além de tokenizer.json.
+- Anotações CLDR mais ricas para sequências ZWJ (hoje `word_en` compostos usam nomes Unicode unidos quando não há termo CLDR).
 
 ---
 
-*Este documento serve de apoio à documentação científica do experimento no âmbito da pesquisa. Ajuste as secções conforme o enquadramento da sua tese.*
+*Este documento serve de apoio à documentação científica do experimento no âmbito da pesquisa.*

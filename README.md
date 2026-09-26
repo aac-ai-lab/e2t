@@ -1,11 +1,13 @@
 # E2T Emoji para Token/Word
 
+**Site / docs:** [https://aac-ai-lab.github.io/e2t/](https://aac-ai-lab.github.io/e2t/) · **Código:** [github.com/aac-ai-lab/e2t](https://github.com/aac-ai-lab/e2t) · **Versão:** 0.2.0
+
 Projeto Rust para **gerar automaticamente o dicionário completo** emoji → token/word: para cada emoji (Unicode, propriedade Emoji) regista a tokenização (tokenizador) e as **palavras** em inglês (`word_en`, nome Unicode em minúsculas) e em pt-BR (`word_pt_br`, via CLDR ou ficheiro custom). O ficheiro gerado **é** o dicionário — não há dataset separado.
 
 *Este trabalho integra **experimento**; a documentação foi organizada para suportar redação científica e reprodutibilidade. Ver [docs/pt-br/EXPERIMENTO_PESQUISA](docs/pt-br/EXPERIMENTO_PESQUISA.md) para enquadramento do experimento, limitações, citação e uso na tese.*
 
-**Fonte dos emojis:** [Unicode UTS #51](https://unicode.org/reports/tr51), ficheiro [emoji-data.txt](https://unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt) (primeira secção "Emoji").  
-**Tokenização:** Tokenizadores compatíveis com HuggingFace (ficheiro `tokenizer.json`).  
+**Fonte dos emojis:** [Unicode UTS #51](https://unicode.org/reports/tr51), ficheiro [emoji-data.txt](https://unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt) (primeira secção "Emoji"), mais [emoji-zwj-sequences.txt](https://unicode.org/Public/emoji/latest/emoji-zwj-sequences.txt) e [emoji-sequences.txt](https://unicode.org/Public/emoji/latest/emoji-sequences.txt) quando presentes em `data/`.  
+**Tokenização:** Tokenizadores compatíveis com HuggingFace (ficheiro `tokenizer.json`; `make fetch-tokenizer` ou `make fetch-data`).  
 **Palavra (word):** Nome Unicode em minúsculas em **inglês** (`word_en`) e opcionalmente em **pt-BR** (`word_pt_br`) via [CLDR](https://github.com/unicode-org/cldr-json) ou ficheiro custom.  
 **Saída:** Um único CSV que serve de **dicionário** — colunas `emoji`, `codepoint_hex`, `tokenizer_id`, `n_tokens`, `token_ids`, `token_strs`, `word_en`, `word_pt_br`.
 
@@ -13,18 +15,18 @@ Projeto Rust para **gerar automaticamente o dicionário completo** emoji → tok
 
 ## Como funciona (replicabilidade)
 
-1. **Lista de emojis:** O subcomando `fetch-emoji-list` lê `emoji-data.txt`, interpreta linhas `XXXX ; Emoji` e `XXXX..YYYY ; Emoji`, expande intervalos e escreve um emoji por linha (um codepoint por linha). A lista segue a propriedade **Emoji** (UTS #51); emojis compostos (sequências ZWJ, etc.) não são expandidos nesta versão.
-2. **Construção do dicionário:** O subcomando `build` gera o **dicionário completo** emoji → token/word: para cada emoji regista `n_tokens`, `token_ids`, `token_strs`, **`word_en`** (nome Unicode em minúsculas) e **`word_pt_br`** (termos em português: `data/cldr_emoji_pt_br.csv` do CLDR ou `--words-pt-br` para custom).
+1. **Lista de emojis:** O subcomando `fetch-emoji-list` lê `emoji-data.txt`, interpreta linhas `XXXX ; Emoji` e `XXXX..YYYY ; Emoji`, expande intervalos e escreve um emoji por linha. Se existirem `data/emoji-zwj-sequences.txt` / `data/emoji-sequences.txt` (ou `--sequences`), inclui também sequências ZWJ, bandeiras, etc. (`--no-sequences` para desligar).
+2. **Construção do dicionário:** O subcomando `build` gera o **dicionário completo** emoji → token/word: para cada emoji (codepoint ou sequência) regista `n_tokens`, `token_ids`, `token_strs`, **`word_en`** e **`word_pt_br`** (`data/cldr_emoji_pt_br.csv` ou `--words-pt-br`).
 3. **Validação:** O subcomando `validate` lê o dicionário (CSV) e produz estatísticas: total de linhas, média de tokens por emoji, proporção de emojis em 1 token, distribuição de `n_tokens`, estatísticas por tokenizador.
 4. **Emoji → palavra (to-words):** Usa o dicionário gerado: dada uma frase com emojis (ex.: `[🧒, 🍎]`), devolve a sequência de palavras. Use `--lang en` (padrão) ou `--lang pt-br` para escolher `word_en` ou `word_pt_br`.
 
-O processo é **determinístico** para a mesma versão de emoji-data e do mesmo ficheiro tokenizador.
+O processo é **determinístico** para a mesma versão de emoji-data / sequências e do mesmo ficheiro tokenizador.
 
 ## Requisitos
 
 - [Rust](https://www.rust-lang.org/) (edição 2021; `rustup` recomendado)
-- Ficheiro **emoji-data.txt** (descarregar de [Unicode](https://unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt)) em `data/` ou indicar caminho
-- Ficheiro **tokenizer.json** (ex.: [GPT-2 no HuggingFace](https://huggingface.co/gpt2)) para construir o dataset completo
+- Dados Unicode + tokenizer: `make fetch-data` (ou descarregar manualmente `emoji-data.txt` e `tokenizer.json`)
+- Opcional: `python3` para gerar `data/cldr_emoji_pt_br.csv`
 
 ## Estrutura
 
@@ -247,8 +249,8 @@ make reproduce EMOJI_DATA=data/emoji-data.txt TOKENIZER=data/gpt2-tokenizer.json
 
 ## Limitações
 
-- Apenas a **propriedade Emoji** (primeira secção de emoji-data.txt); emojis compostos (sequências) não são expandidos.
-- Tokenizador requer **ficheiro local** `tokenizer.json` (sem descarga automática do Hub no Rust).
+- Sequências ZWJ/bandeiras exigem os ficheiros Unicode em `data/` (`make fetch-data`); sem eles, `fetch-emoji-list` fica só com codepoints da propriedade Emoji.
+- Tokenizador requer **ficheiro local** `tokenizer.json` (descarga assistida: `make fetch-tokenizer` / `make fetch-data`).
 - `word_pt_br` depende de `data/cldr_emoji_pt_br.csv` (gerar com `python3 scripts/fetch_cldr_pt_br.py`) ou de ficheiro custom; emojis sem anotação pt no CLDR ficam com a célula vazia.
 
 ## Licença

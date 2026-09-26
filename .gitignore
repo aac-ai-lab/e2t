@@ -3,6 +3,7 @@ Cargo.lock
 *.csv
 !data/emoji_dictionary_sample.csv
 !data/emoji_words.csv
+!data/cldr_emoji_pt_br.csv
 .env
 *.pyc
 __pycache__

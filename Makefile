@@ -26,6 +26,7 @@ E2T_LANG    ?=
 
 .PHONY: help build release test fmt fmt-check clippy check clean
 .PHONY: fetch-emoji-list build-dictionary validate to-words reproduce install
+.PHONY: fetch-data fetch-tokenizer
 
 help:
 	@echo "E2T Emoji para Token/Word — alvos disponíveis:"
@@ -39,6 +40,8 @@ help:
 	@echo "  make check          fmt-check + clippy + test"
 	@echo "  make clean          Remove target/"
 	@echo ""
+	@echo "  make fetch-data     Descarrega Unicode + tokenizer GPT-2 (+ CLDR pt se houver python3)"
+	@echo "  make fetch-tokenizer  Só o tokenizer GPT-2 (atalho)"
 	@echo "  make fetch-emoji-list [EMOJI_DATA=data/emoji-data.txt] [EMOJI_LIST=data/emoji_list.txt]"
 	@echo "  make build-dictionary   Requer TOKENIZER=/path/to/tokenizer.json [EMOJI_LIST=...] [CSV_OUT=...]"
 	@echo "  make validate [CSV_VALID=...]"
@@ -46,7 +49,7 @@ help:
 	@echo "  make reproduce       Requer EMOJI_DATA; opcional TOKENIZER para build completo"
 	@echo ""
 	@echo "Exemplo:"
-	@echo "  make release && make fetch-emoji-list"
+	@echo "  make fetch-data && make release && make fetch-emoji-list"
 	@echo "  make build-dictionary TOKENIZER=data/gpt2-tokenizer.json CSV_OUT=data/emoji_dictionary.csv"
 	@echo "  make validate CSV_VALID=data/emoji_dictionary.csv"
 	@echo "  make to-words INPUT=\"🧒 🍎\""
@@ -98,3 +101,12 @@ reproduce:
 
 install:
 	cargo install --path .
+
+fetch-data:
+	./scripts/fetch_unicode_and_tokenizer.sh
+
+fetch-tokenizer:
+	mkdir -p data
+	curl -fsSL -o data/gpt2-tokenizer.json \
+	  "https://huggingface.co/gpt2/resolve/main/tokenizer.json"
+	@echo "Escrito data/gpt2-tokenizer.json"

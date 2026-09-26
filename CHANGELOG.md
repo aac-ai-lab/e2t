@@ -2,7 +2,7 @@
 
 Todas as alterações notáveis ao projeto E2T estão documentadas neste ficheiro. O formato baseia-se em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
-## [Unreleased]
+## [0.2.0] - 2026-09-26
 
 ### Adicionado
 
@@ -10,9 +10,22 @@ Todas as alterações notáveis ao projeto E2T estão documentadas neste ficheir
 - Suporte a termos pt-BR via **CLDR**: ficheiro `data/cldr_emoji_pt_br.csv` (anotações oficiais em português); gerar com `python3 scripts/fetch_cldr_pt_br.py`.
 - Opção `--words-pt-br <csv>` no `build`: ficheiro custom (emoji, word) para preencher `word_pt_br`; sobrepõe CLDR quando ambos existem.
 - Subcomando `to-words`: opção `--lang en` ou `--lang pt-br` para escolher a coluna word_en ou word_pt_br na saída.
-- Script `scripts/fetch_cldr_pt_br.py`: descarrega anotações CLDR pt e gera `data/cldr_emoji_pt_br.csv` (formato emoji, word).
-- Makefile: alvo `to-words` com variáveis `INPUT`, `E2T_LANG` (não usar `LANG`; conflito com locale), `DICTIONARY`.
-- Documentação atualizada: README (uso com Make), docs/pt-br (DATASET_EMOJI_TOKEN, EXPERIMENTO_PESQUISA, METRICAS_AVALIACAO, VALIDACAO_DATASET, README) com word_en, word_pt_br, CLDR e script.
+- Script `scripts/fetch_cldr_pt_br.py`: descarrega anotações CLDR pt e gera `data/cldr_emoji_pt_br.csv`.
+- Parser de **sequências** Unicode (`emoji-zwj-sequences.txt`, `emoji-sequences.txt`): ZWJ, bandeiras e afins entram na lista e no dicionário.
+- `fetch-emoji-list` inclui sequências de `data/` por omissão (`--no-sequences` para desligar; `--sequences <ficheiro>` para extras).
+- Script `scripts/fetch_unicode_and_tokenizer.sh` e alvos Make `fetch-data` / `fetch-tokenizer` (descarga Unicode + GPT-2 tokenizer).
+- Site GitHub Pages do projeto (`index.html`) e publicação pública.
+- Makefile: alvo `to-words` com variáveis `INPUT`, `E2T_LANG`, `DICTIONARY`.
+
+### Corrigido
+
+- CI: `Swatinem/rust-cache@v2` (a tag `@2` quebrava o workflow).
+- Clippy/`cargo fmt` alinhados com `-D warnings`.
+
+### Limitações conhecidas
+
+- Tokenizador continua a ser um ficheiro local `tokenizer.json` (agora com descarga assistida via `make fetch-tokenizer`).
+- `word_pt_br` depende de `data/cldr_emoji_pt_br.csv` ou `--words-pt-br`; emojis sem anotação pt no CLDR ficam com a célula vazia.
 
 ---
 
@@ -31,8 +44,8 @@ Todas as alterações notáveis ao projeto E2T estão documentadas neste ficheir
 - CI (GitHub Actions): fmt, clippy, test, build, fetch em fixtures, validate em sample CSV.
 - CITATION.cff, LICENSE (MIT), README.md, CHANGELOG.md.
 
-### Limitações conhecidas
+### Limitações conhecidas (0.1.0)
 
-- Apenas propriedade Emoji (um codepoint por emoji); emojis compostos (sequências ZWJ, etc.) não são expandidos.
+- Apenas propriedade Emoji (um codepoint por emoji); emojis compostos (sequências ZWJ, etc.) não eram expandidos.
 - Tokenizador requer ficheiro local tokenizer.json (sem descarga automática do HuggingFace Hub no Rust).
-- word_pt_br depende de data/cldr_emoji_pt_br.csv (gerar com `python3 scripts/fetch_cldr_pt_br.py`) ou de ficheiro custom; emojis sem anotação pt no CLDR ficam com a célula vazia.
+- word_pt_br depende de data/cldr_emoji_pt_br.csv ou de ficheiro custom; emojis sem anotação pt no CLDR ficam com a célula vazia.

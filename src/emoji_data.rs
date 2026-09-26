@@ -1,8 +1,9 @@
-//! Parser do ficheiro Unicode emoji-data.txt (UTS #51).
+//! Parser do ficheiro Unicode emoji-data.txt (UTS #51) e sequências
+//! (emoji-zwj-sequences.txt / emoji-sequences.txt).
 //!
-//! Lê apenas a primeira secção "Emoji" (codepoints e intervalos) e expande
-//! para uma lista de caracteres emoji (um codepoint por entrada; emojis
-//! compostos/sequências não são expandidos nesta versão).
+//! - **Codepoints:** primeira secção "Emoji" de `emoji-data.txt` (um `char` por entrada).
+//! - **Sequências:** linhas `CP1 CP2 … ; Tipo ; …` em ficheiros de sequências Unicode
+//!   (ZWJ, bandeiras, modificadores, etc.), devolvidas como `String` UTF-8.
 
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -23,8 +24,7 @@ pub enum EmojiDataError {
 /// Lê `emoji-data.txt` e devolve todos os caracteres emoji da primeira secção "Emoji".
 /// Para cada linha da forma `XXXX ; Emoji` ou `XXXX..YYYY ; Emoji`, expande os
 /// codepoints e converte para `char`. Para quando encontra uma linha que não
-/// pertence à propriedade "Emoji" (ex.: "Emoji_Presentation"), para não incluir
-/// duplicados.
+/// pertence à propriedade "Emoji" (ex.: "Emoji_Presentation").
 pub fn read_emoji_codepoints_from_path(path: &Path) -> Result<Vec<char>, EmojiDataError> {
     let f = File::open(path)?;
     let reader = BufReader::new(f);
@@ -39,7 +39,7 @@ pub fn read_emoji_codepoints_from_path(path: &Path) -> Result<Vec<char>, EmojiDa
         if line.contains("Emoji_Presentation") || line.contains("Emoji_Modifier") {
             break;
         }
-        if !line.contains(" ; Emoji ") && !line.contains(" ; Emoji\n") {
+        if !line.contains(" ; Emoji ") && !line.ends_with(" ; Emoji") {
             continue;
         }
         let part = line
@@ -77,8 +77,46 @@ pub fn read_emoji_codepoints_from_path(path: &Path) -> Result<Vec<char>, EmojiDa
     Ok(codepoints)
 }
 
+/// Lê `emoji-zwj-sequences.txt` ou `emoji-sequences.txt` (UTS #51).
+///
+/// Formato típico:
+/// `1F468 200D 1F469 200D 1F466 ; RGI_Emoji_ZWJ_Sequence ; … # … (👨‍👩‍👦)`
+pub fn read_emoji_sequences_from_path(path: &Path) -> Result<Vec<String>, EmojiDataError> {
+    let f = File::open(path)?;
+    let reader = BufReader::new(f);
+    let mut sequences = Vec::new();
+    for line in reader.lines() {
+        let line = line?;
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let code_part = line
+            .split(';')
+            .next()
+            .ok_or_else(|| EmojiDataError::InvalidLine(line.to_string()))?
+            .trim();
+        if code_part.is_empty() {
+            continue;
+        }
+        let mut chars = String::new();
+        for tok in code_part.split_whitespace() {
+            let cp = u32::from_str_radix(tok, 16)
+                .map_err(|_| EmojiDataError::InvalidLine(line.to_string()))?;
+            if let Some(c) = char::from_u32(cp) {
+                chars.push(c);
+            } else {
+                return Err(EmojiDataError::InvalidCodepoint(cp));
+            }
+        }
+        if !chars.is_empty() {
+            sequences.push(chars);
+        }
+    }
+    Ok(sequences)
+}
+
 /// Formata um `char` como codepoint Unicode em hexadecimal (ex.: "1F600", "0023").
-/// Codepoints &lt; 0x10000 são formatados com 4 dígitos; maiores com 5–6 dígitos.
 pub fn codepoint_hex(c: char) -> String {
     let u = c as u32;
     if u <= 0xFFFF {
@@ -86,6 +124,32 @@ pub fn codepoint_hex(c: char) -> String {
     } else {
         format!("{:X}", u)
     }
+}
+
+/// Hex de um emoji (um codepoint ou sequência): codepoints separados por espaço.
+pub fn emoji_hex(s: &str) -> String {
+    s.chars().map(codepoint_hex).collect::<Vec<_>>().join(" ")
+}
+
+/// Nome inglês aproximado: um codepoint via `unicode_names2`; sequências = nomes unidos.
+pub fn word_en_for_emoji(s: &str) -> String {
+    let chars: Vec<char> = s.chars().collect();
+    if chars.len() == 1 {
+        return unicode_names2::name(chars[0])
+            .map(|n| n.to_string().to_lowercase())
+            .unwrap_or_default();
+    }
+    chars
+        .into_iter()
+        .filter_map(|c| {
+            // ZWJ e VS-16 não entram no nome composto
+            if c == '\u{200D}' || c == '\u{FE0F}' {
+                return None;
+            }
+            unicode_names2::name(c).map(|n| n.to_string().to_lowercase())
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 #[cfg(test)]
@@ -119,5 +183,25 @@ mod tests {
     fn test_codepoint_hex() {
         assert_eq!(codepoint_hex('😀'), "1F600");
         assert_eq!(codepoint_hex('#'), "0023");
+    }
+
+    #[test]
+    fn test_parse_zwj_sequence() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("emoji-zwj-sequences.txt");
+        let mut f = std::fs::File::create(&path).unwrap();
+        writeln!(f, "# comment").unwrap();
+        writeln!(
+            f,
+            "1F468 200D 1F469 200D 1F466 ; RGI_Emoji_ZWJ_Sequence ; family: man, woman, boy # E2.0 [1] (👨‍👩‍👦)"
+        )
+        .unwrap();
+        f.sync_all().unwrap();
+        drop(f);
+
+        let seqs = read_emoji_sequences_from_path(&path).unwrap();
+        assert_eq!(seqs.len(), 1);
+        assert_eq!(seqs[0], "👨‍👩‍👦");
+        assert_eq!(emoji_hex(&seqs[0]), "1F468 200D 1F469 200D 1F466");
     }
 }
